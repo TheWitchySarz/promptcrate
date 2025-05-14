@@ -1,237 +1,263 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation'; // Import useSearchParams
-// import AppHeader from '../../(components)/app/AppHeader'; // Removed AppHeader
-import Navbar from '../../(components)/layout/Navbar'; // Added Navbar
-import PromptSidebar from '../../(components)/app/editor/PromptSidebar';
-import PromptBuilder from '../../(components)/app/editor/PromptBuilder'; // Import new builder
-// import OutputViewer from '../../(components)/app/editor/OutputViewer';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/app/(contexts)/AuthContext';
+import Navbar from '@/app/(components)/layout/Navbar';
+import PromptSidebar from '@/app/(components)/app/editor/PromptSidebar';
+import PromptBuilder from '@/app/(components)/app/editor/PromptBuilder';
+import { Loader2 } from 'lucide-react'; // Removed Copy, RefreshCw
 
-interface SavedPrompt {
-  id: string;
+// Define the comprehensive Prompt interface based on DB schema
+export interface Prompt {
+  id: string; // UUID
+  user_id: string; // UUID, links to auth.users
+  created_at: string; // TIMESTAMPTZ
+  updated_at: string; // TIMESTAMPTZ
   title: string;
-  content: string;
-  model: string;
-  // Add other relevant fields like tags, createdAt, updatedAt etc. later
+  prompt_content: string;
+  model?: string | null;
+  variables?: Record<string, any> | null; // JSONB
+  description?: string | null;
+  tags?: string[] | null; // TEXT[]
+  is_public: boolean;
+  version?: number | null;
 }
 
+// Default new prompt
+const defaultNewPrompt: Omit<Prompt, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { id: null } = {
+  id: null, // Signifies a new, unsaved prompt
+  title: 'Untitled Prompt',
+  prompt_content: '',
+  model: 'gpt-3.5-turbo',
+  variables: {},
+  description: '',
+  tags: [],
+  is_public: false,
+  version: 1,
+};
+
 export default function PromptEditorPage() {
-  const [savedPrompts, setSavedPrompts] = useState<SavedPrompt[]>([]); // Manage list of saved prompts
-  const [activePromptId, setActivePromptId] = useState<string | null>(null);
-  const [currentPromptTitle, setCurrentPromptTitle] = useState('Untitled Prompt');
-  const [currentPromptContent, setCurrentPromptContent] = useState('');
-  const [currentModel, setCurrentModel] = useState('ChatGPT-4'); // Default model, ensure it's in AI_MODELS_FOR_VALIDATION
+  const { isLoggedIn, userRole, isLoading: authLoading, user } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const [promptsList, setPromptsList] = useState<Prompt[]>([]);
+  const [currentPrompt, setCurrentPrompt] = useState<Prompt | (Omit<Prompt, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { id: null })>(defaultNewPrompt);
+  
   const [isSaving, setIsSaving] = useState(false);
-  const [isTesting, setIsTesting] = useState(false);
-  const [isNewPrompt, setIsNewPrompt] = useState(true); // Track if current prompt is new or an existing one
-  const [outputContent, setOutputContent] = useState(''); // State for the output viewer
+  const [isLoadingPrompts, setIsLoadingPrompts] = useState(false);
+  
+  // Removed: activePromptId, currentPromptTitle, currentPromptContent, currentModel, isNewPrompt (can be derived)
 
-  const searchParams = useSearchParams(); // Get search params
-
-  // Effect to load initial prompts (e.g., from localStorage or API in future)
-  // For now, it can be empty or have some mock data for testing UI
+  // Access Control Effect
   useEffect(() => {
-    // const initialMockPrompts: SavedPrompt[] = [
-    //   { id: 'mock1', title: 'My First Real Prompt', content: 'Content for my first prompt', model: 'ChatGPT-4' },
-    //   { id: 'mock2', title: 'Another Cool Idea', content: 'This is a test.', model: 'Claude 3' },
-    // ];
-    // setSavedPrompts(initialMockPrompts);
-    // if (initialMockPrompts.length > 0) {
-    //   // handleSelectPrompt(initialMockPrompts[0].id); // Optionally select the first one
-    // }
-  }, []);
+    if (!authLoading) {
+      if (!isLoggedIn) {
+        router.push('/login?message=Please log in to access the Prompt Editor.');
+      } else if (userRole === 'free') {
+        router.push('/#pricing');
+      }
+    }
+  }, [isLoggedIn, userRole, authLoading, router]);
 
   // Effect to load prompt from query parameters (e.g., from marketplace)
   useEffect(() => {
     const queryTitle = searchParams.get('title');
     const queryPrompt = searchParams.get('prompt');
     const queryModel = searchParams.get('model');
-    // const querySource = searchParams.get('source'); // Source can be used later for specific logic
-    // const queryId = searchParams.get('id'); // ID can be used later
 
     if (queryTitle && queryPrompt) {
-      setCurrentPromptTitle(queryTitle);
-      setCurrentPromptContent(queryPrompt);
-      if (queryModel) {
-        setCurrentModel(queryModel);
-      }
-      setIsNewPrompt(true); // Treat as a new prompt for saving purposes
-      setActivePromptId(null); // Not one of the user's saved prompts yet
-      setOutputContent(''); // Clear any previous output
-      // Potentially log that a prompt was loaded via query params
+      // When loading from query params, it's a new unsaved prompt inspired by marketplace/shared link
+      setCurrentPrompt({
+        ...defaultNewPrompt,
+        title: queryTitle,
+        prompt_content: queryPrompt,
+        model: queryModel || 'gpt-3.5-turbo',
+      });
       console.log('Loaded prompt from query params:', { title: queryTitle, model: queryModel });
     }
-  }, [searchParams]); // Re-run if searchParams change
+  }, [searchParams]);
 
-  const handleNewPrompt = () => {
-    console.log('New Prompt clicked');
-    setActivePromptId(null);
-    setCurrentPromptTitle('Untitled Prompt');
-    setCurrentPromptContent('');
-    setCurrentModel('ChatGPT-4'); // Reset to default model
-    setIsNewPrompt(true); // Set flag for new prompt
-    setOutputContent(''); // Clear output when starting a new prompt
-  };
+  // Fetch user's prompts
+  useEffect(() => {
+    if (isLoggedIn && user && userRole && userRole !== 'free') {
+      const fetchPrompts = async () => {
+        setIsLoadingPrompts(true);
+        try {
+          const response = await fetch('/api/prompts');
+          if (!response.ok) {
+            throw new Error('Failed to fetch prompts');
+          }
+          const data = await response.json();
+          setPromptsList(data as Prompt[]);
+        } catch (error) {
+          console.error("Error fetching prompts:", error);
+          // Handle error (e.g., show a toast message)
+        } finally {
+          setIsLoadingPrompts(false);
+        }
+      };
+      fetchPrompts();
+    }
+  }, [isLoggedIn, user, userRole]);
 
-  const handleSelectPrompt = (promptId: string) => {
-    const selected = savedPrompts.find(p => p.id === promptId);
+  const handleNewPrompt = useCallback(() => {
+    setCurrentPrompt(defaultNewPrompt);
+  }, []);
+
+  const handleSelectPrompt = useCallback((promptId: string) => {
+    const selected = promptsList.find(p => p.id === promptId);
     if (selected) {
-      setActivePromptId(selected.id);
-      setCurrentPromptTitle(selected.title);
-      setCurrentPromptContent(selected.content);
-      setCurrentModel(selected.model);
-      setIsNewPrompt(false); // It's an existing prompt
-      setOutputContent(''); // Clear output when selecting an existing prompt
-      console.log('Selected prompt:', selected.id);
-    } else {
-        console.warn("Selected prompt not found in savedPrompts");
+      setCurrentPrompt(selected);
     }
-  };
+  }, [promptsList]);
 
-  const handleSavePrompt = async () => {
-    if (!currentPromptTitle.trim()) {
-        // Basic validation: title is required
-        alert("Prompt title cannot be empty."); // Replace with a proper notification later
-        return;
-    }
-    setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 700)); // Simulate API call
-
-    let newId = activePromptId;
-    if (isNewPrompt || !activePromptId) { // If it's a new prompt or no ID (safety for new)
-      newId = `prompt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-    }
-    
-    const promptToSave: SavedPrompt = {
-        id: newId!,
-        title: currentPromptTitle,
-        content: currentPromptContent,
-        model: currentModel,
-    };
-
-    if (isNewPrompt || !savedPrompts.find(p => p.id === newId)) {
-      setSavedPrompts(prev => [...prev, promptToSave]);
-      console.log('Saved new prompt:', promptToSave.id);
-    } else {
-      setSavedPrompts(prev => prev.map(p => p.id === newId ? promptToSave : p));
-      console.log('Updated prompt:', promptToSave.id);
-    }
-    
-    setActivePromptId(promptToSave.id); // Set the newly saved/updated prompt as active
-    setIsNewPrompt(false); // It's no longer a "new" unsaved prompt
-    setIsSaving(false);
-    // console.log('Saved/Updated prompt:', promptToSave);
-  };
-
-  const handleTestPrompt = async () => {
-    if (!currentPromptContent.trim()) {
-      setOutputContent("Please enter a prompt to test.");
+  const handleSavePrompt = useCallback(async () => {
+    if (!currentPrompt || !currentPrompt.title.trim() || !currentPrompt.prompt_content.trim()) {
+      alert("Prompt title and content cannot be empty.");
       return;
     }
-    console.log('Testing prompt:', { content: currentPromptContent, model: currentModel });
-    setIsTesting(true);
-    setOutputContent(''); 
+    setIsSaving(true);
 
     try {
-      const response = await fetch('/api/refine-prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: currentPromptContent, model: currentModel }),
-      });
+      let savedPromptData: Prompt;
+      if (currentPrompt.id === null) { // New prompt
+        // Prepare data for POST, user_id will be set by API route from session
+        const newPromptPayload: Omit<Prompt, 'id' | 'user_id' | 'created_at' | 'updated_at'> = {
+          title: currentPrompt.title,
+          prompt_content: currentPrompt.prompt_content,
+          model: currentPrompt.model,
+          variables: currentPrompt.variables,
+          description: currentPrompt.description,
+          tags: currentPrompt.tags,
+          is_public: currentPrompt.is_public,
+          version: currentPrompt.version,
+        };
+        const response = await fetch('/api/prompts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newPromptPayload),
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create prompt');
+        }
+        savedPromptData = await response.json();
+        setPromptsList(prev => [...prev, savedPromptData]);
+      } else { // Existing prompt
+        const updatePayload: Partial<Omit<Prompt, 'id' | 'user_id' | 'created_at'>> = {
+          title: currentPrompt.title,
+          prompt_content: currentPrompt.prompt_content,
+          model: currentPrompt.model,
+          variables: currentPrompt.variables,
+          description: currentPrompt.description,
+          tags: currentPrompt.tags,
+          is_public: currentPrompt.is_public,
+          version: currentPrompt.version,
+          // updated_at will be handled by DB trigger or API
+        };
+        const response = await fetch(`/api/prompts/${currentPrompt.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updatePayload),
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to update prompt');
+        }
+        savedPromptData = await response.json();
+        setPromptsList(prev => prev.map(p => p.id === savedPromptData.id ? savedPromptData : p));
+      }
+      setCurrentPrompt(savedPromptData); // Update current prompt with data from server (e.g. id, timestamps)
+      console.log("Prompt saved/updated:", savedPromptData);
+    } catch (error) {
+      console.error("Error saving prompt:", error);
+      alert(`Error saving prompt: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [currentPrompt, user]); // Added user dependency for user_id in new prompts if it were to be set client-side
 
+  const handleDeletePrompt = useCallback(async (promptId: string) => {
+    if (!confirm("Are you sure you want to delete this prompt?")) return;
+
+    try {
+      const response = await fetch(`/api/prompts/${promptId}`, {
+        method: 'DELETE',
+      });
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `API request failed with status ${response.status}`);
+        throw new Error(errorData.error || 'Failed to delete prompt');
       }
-
-      const data = await response.json();
-      if (data.refinedPrompt) {
-        setOutputContent(data.refinedPrompt);
-      } else {
-        throw new Error("No refined prompt received from API.");
+      setPromptsList(prev => prev.filter(p => p.id !== promptId));
+      if (currentPrompt && currentPrompt.id === promptId) {
+        handleNewPrompt(); // Reset to a new prompt if the active one was deleted
       }
+      console.log("Prompt deleted:", promptId);
     } catch (error) {
-      console.error("Error testing/refining prompt:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-      setOutputContent(`Error: ${errorMessage}`);
-    } finally {
-      setIsTesting(false);
+      console.error("Error deleting prompt:", error);
+      alert(`Error deleting prompt: ${error instanceof Error ? error.message : String(error)}`);
     }
-  };
+  }, [currentPrompt, handleNewPrompt]);
 
+  // Removed handleTestPrompt function
+
+  // Render loading state or access denied message
+  if (authLoading || isLoadingPrompts) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white">
+        <Loader2 className="h-12 w-12 animate-spin text-purple-500" />
+        <p className="ml-4 text-lg">Loading editor...</p>
+      </div>
+    );
+  }
+
+  if (!isLoggedIn || userRole === 'free') {
+    // This part is usually handled by the useEffect redirect, 
+    // but as a fallback or if redirect hasn't happened yet:
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-8">
+        <Navbar />
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-red-500 mb-4">Access Denied</h1>
+          <p className="text-lg mb-6">
+            {isLoggedIn ? "The Prompt Editor is available for Pro and Enterprise users. Please upgrade your plan." : "Please log in to access the Prompt Editor."}
+          </p>
+          <button 
+            onClick={() => router.push(isLoggedIn ? '/#pricing' : '/login')}
+            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-lg font-semibold transition-colors"
+          >
+            {isLoggedIn ? "Upgrade to Pro" : "Login"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Main Editor UI - Simplified layout
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
-      {/* <AppHeader /> */}
-      <Navbar /> {/* Replaced AppHeader with Navbar */} 
-      <div className="flex-grow flex flex-row overflow-hidden h-[calc(100vh-4rem)]"> {/* Adjusted height if Navbar has different height than AppHeader */} 
+    <div className="min-h-screen flex flex-col bg-gray-900 text-white">
+      <Navbar />
+      <div className="flex-grow flex flex-row overflow-hidden h-[calc(100vh-var(--navbar-height,4rem))]">
         <PromptSidebar 
-          prompts={savedPrompts} // Pass the list of saved prompts
+          prompts={promptsList}
           onNewPrompt={handleNewPrompt}
           onSelectPrompt={handleSelectPrompt}
-          activePromptId={activePromptId}
+          activePromptId={currentPrompt?.id === null ? null : currentPrompt?.id || null}
+          onDeletePrompt={handleDeletePrompt}
+          isLoading={isLoadingPrompts}
         />
-        <main className="flex-grow flex flex-col p-4 md:p-6 overflow-y-auto">
-          <div className="flex-grow flex flex-col lg:flex-row gap-4 md:gap-6">
-            <PromptBuilder
-              title={currentPromptTitle}
-              onTitleChange={setCurrentPromptTitle}
-              model={currentModel}
-              onModelChange={setCurrentModel}
-              promptContent={currentPromptContent}
-              onPromptContentChange={setCurrentPromptContent}
-              onSave={handleSavePrompt}
-              isSaving={isSaving}
-              isNewPrompt={isNewPrompt}
-            />
-
-            {/* Output Viewer Panel */}
-            <section className="flex-grow lg:w-1/2 bg-white rounded-xl shadow-lg border border-gray-200 p-6 flex flex-col">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  Output Viewer <span className="text-sm text-gray-500 ml-1">— {currentModel}</span>
-                </h2>
-                {/* Add any top-right controls for output viewer here if needed later */}
-              </div>
-              
-              <div className="flex-grow bg-gray-50 rounded-md border border-gray-200 p-4 overflow-y-auto min-h-[200px] custom-scrollbar">
-                {isTesting ? (
-                  <div className="flex flex-col items-center justify-center h-full">
-                    <svg className="animate-spin h-8 w-8 text-purple-600 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p className="text-gray-500 text-sm">Generating output...</p>
-                  </div>
-                ) : outputContent ? (
-                  <pre className="text-sm text-gray-700 whitespace-pre-wrap break-words font-sans">
-                    {outputContent}
-                  </pre>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-gray-400 italic">Output will appear here after testing a prompt.</p>
-                  </div>
-                )}
-              </div>
-              
-              {!isTesting && (
-                <div className="mt-4 flex gap-3">
-                  <button
-                    onClick={() => navigator.clipboard.writeText(outputContent)}
-                    disabled={!outputContent}
-                    className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Copy Output
-                  </button>
-                  <button
-                    onClick={handleTestPrompt}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md border border-gray-300 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors"
-                  >
-                    Regenerate
-                  </button>
-                </div>
-              )}
-            </section>
+        {/* Main content area now primarily for PromptBuilder */}
+        <main className="flex-grow flex flex-col p-4 md:p-6 overflow-y-auto custom-scrollbar">
+          {/* PromptBuilder will take up the main space in this column */}
+          <div className="flex-grow flex flex-col h-full">
+             <PromptBuilder
+                promptData={currentPrompt}
+                onPromptDataChange={setCurrentPrompt}
+                onSavePrompt={handleSavePrompt}
+                isSaving={isSaving}
+              />
           </div>
         </main>
       </div>

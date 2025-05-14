@@ -1,19 +1,34 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '../(components)/layout/Navbar';
 import Footer from '../(components)/shared/Footer';
-import { Mail, Lock, Github, LogIn as GoogleIcon } from 'lucide-react'; // Renamed LogIn to GoogleIcon for clarity
-// import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { Mail, Lock, Github, LogIn as GoogleIcon } from 'lucide-react';
+import { useAuth } from '../(contexts)/AuthContext';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function LoginPage() {
-  // const supabase = createClientComponentClient();
+  const { signInWithEmail, signInWithGoogle, isLoggedIn, isLoading: authIsLoading } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null); // For potential messages like password reset sent
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isLoggedIn && !authIsLoading) {
+      const redirectTo = searchParams.get('redirect_to');
+      if (redirectTo && redirectTo.startsWith('/')) {
+        router.push(redirectTo);
+      } else {
+        router.push('/app/editor');
+      }
+    }
+  }, [isLoggedIn, authIsLoading, router, searchParams]);
 
   const handleEmailLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -21,44 +36,43 @@ export default function LoginPage() {
     setMessage(null);
     setLoading(true);
 
-    // Placeholder for Supabase login
-    console.log('Logging in with:', { email, password });
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
-
-    // Example success/error handling (replace with actual Supabase logic)
-    // const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    // if (signInError) {
-    //   setError(signInError.message);
-    // } else {
-    //   // Redirect to app or dashboard
-    //   // router.push('/app/editor'); 
-    //   setMessage('Login successful! Redirecting...');
-    // }
-    setMessage('Mock login successful! Check console for details. (Actual Supabase integration pending)');
-    // setEmail(''); // Optionally clear fields, or keep them for retry
-    // setPassword('');
-
+    const { error: loginError } = await signInWithEmail(email, password);
     setLoading(false);
+
+    if (loginError) {
+      setError(loginError.message);
+    }
   };
 
   const handleOAuthLogin = async (provider: 'google' | 'github') => {
-    setLoading(true);
     setError(null);
-    console.log(`Attempting OAuth login with ${provider}`);
-    // Placeholder for Supabase OAuth
-    // const { error } = await supabase.auth.signInWithOAuth({
-    //   provider,
-    //   options: {
-    //     redirectTo: `${window.location.origin}/auth/callback`,
-    //   },
-    // });
-    // if (error) {
-    //   setError(error.message);
-    // }
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setMessage(`Mock OAuth login with ${provider} initiated. (Actual Supabase integration pending)`);
-    setLoading(false);
+    setMessage(null);
+    setLoading(true);
+
+    if (provider === 'google') {
+      const { error: googleError } = await signInWithGoogle();
+      if (googleError) {
+        setError(googleError.message);
+        setLoading(false);
+      }
+    } else if (provider === 'github') {
+      setError('GitHub login is not yet implemented.');
+      console.log("Attempting GitHub Auth - to be implemented");
+      setLoading(false);
+    }
   };
+
+  if (authIsLoading || isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Navbar />
+        <main className="flex-grow flex items-center justify-center">
+          <p className="text-gray-700">Loading...</p>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -77,7 +91,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* OAuth Buttons */}
           <div className="space-y-3">
             <button
               onClick={() => handleOAuthLogin('google')}
@@ -158,10 +171,10 @@ export default function LoginPage() {
             <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || authIsLoading}
                 className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 transition-colors"
               >
-                {loading ? 'Logging in...' : 'Log in'}
+                {(loading || authIsLoading) ? 'Processing...' : 'Log in'}
               </button>
             </div>
           </form>

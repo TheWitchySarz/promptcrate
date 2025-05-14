@@ -1,16 +1,19 @@
 'use client';
 
 import React from 'react';
-import { FilePlus2, History, MessageSquareText } from 'lucide-react'; // Updated icons
+import { FilePlus2, History, MessageSquareText, Trash2, Loader2 } from 'lucide-react'; // Updated icons
+import type { Prompt } from '@/app/app/editor/page'; // Adjusted import path using @ alias
 
 // Mock data for prompts - will be removed or replaced by props
 // const mockUserPrompts = []; // Example of empty state
 
 interface PromptSidebarProps {
-  prompts: Array<{ id: string; title: string; }>; // Expecting prompts as a prop
+  prompts: Prompt[]; // Use the full Prompt type
   onNewPrompt: () => void;
   onSelectPrompt: (promptId: string) => void;
   activePromptId?: string | null;
+  onDeletePrompt: (promptId: string) => void; // Added prop
+  isLoading?: boolean; // Added prop
 }
 
 const PromptSidebar: React.FC<PromptSidebarProps> = ({
@@ -18,7 +21,15 @@ const PromptSidebar: React.FC<PromptSidebarProps> = ({
   onNewPrompt,
   onSelectPrompt,
   activePromptId,
+  onDeletePrompt,
+  isLoading,
 }) => {
+  // Handle delete button click
+  const handleDeleteClick = (e: React.MouseEvent, promptId: string) => {
+    e.stopPropagation(); // Prevent onSelectPrompt from firing
+    onDeletePrompt(promptId);
+  };
+
   return (
     <aside className="w-64 md:w-72 bg-white border-r border-gray-200 flex flex-col h-full p-0">
       {/* Header and New Prompt Button */}
@@ -35,9 +46,14 @@ const PromptSidebar: React.FC<PromptSidebarProps> = ({
 
       {/* Prompt List */}
       <div className="flex-grow overflow-y-auto p-3 space-y-1">
-        {prompts.length > 0 ? (
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 size={24} className="text-gray-400 animate-spin" />
+            <p className="ml-2 text-sm text-gray-500">Loading prompts...</p>
+          </div>
+        ) : prompts.length > 0 ? (
           prompts.map(prompt => (
-            <li key={prompt.id} className="list-none">
+            <li key={prompt.id} className="list-none group">
               <button 
                 onClick={() => onSelectPrompt(prompt.id)}
                 title={prompt.title}
@@ -48,8 +64,14 @@ const PromptSidebar: React.FC<PromptSidebarProps> = ({
               >
                 <MessageSquareText size={16} className={`${activePromptId === prompt.id ? 'text-purple-600' : 'text-gray-400'}`} />
                 <span className="truncate flex-grow">{prompt.title}</span>
-                {/* Optional: Add a history icon or other indicators here */}
-                {/* <History size={14} className="text-gray-400 hover:text-gray-600 ml-auto flex-shrink-0" /> */}
+                <button 
+                  type="button" 
+                  onClick={(e) => handleDeleteClick(e, prompt.id)}
+                  title="Delete prompt"
+                  className="p-1 -mr-1 text-gray-400 hover:text-red-500 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                >
+                  <Trash2 size={16} />
+                </button>
               </button>
             </li>
           ))

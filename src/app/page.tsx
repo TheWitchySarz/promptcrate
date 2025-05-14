@@ -7,6 +7,7 @@ import { CheckCircle, Mail } from 'lucide-react';
 import Navbar from './(components)/layout/Navbar';
 import Footer from './(components)/shared/Footer';
 import Link from 'next/link';
+import TrustedBySection from "./(components)/TrustedBySection";
 
 function UIMockupSection() {
   const [activeTab, setActiveTab] = useState("editor");
@@ -231,31 +232,6 @@ function WhyPromptCrateSection() {
 }
 
 export default function Home() {
-  const [email, setEmail] = useState('');
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleWaitlistSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError('');
-    setIsSubmitted(false);
-
-    if (!email) {
-      setError('Please enter your email address.');
-      return;
-    }
-    if (!/\\S+@\\S+\\.\\S+/.test(email)) {
-      setError('Please enter a valid email address.');
-      return;
-    }
-
-    console.log('Waitlist submitted:', email);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    setIsSubmitted(true);
-    setEmail('');
-  };
-
   return (
     <div className="bg-white min-h-screen w-full font-sans text-gray-900">
       <Navbar />
@@ -266,56 +242,34 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7 }}
+            className="flex flex-col items-center"
           >
-            <span className="inline-block text-lg font-semibold tracking-wide text-purple-600 mb-4">Create. Refine. Monetize.</span>
-            <h1 className="text-3xl sm:text-5xl md:text-6xl font-semibold mb-12 leading-tight">
-              Your AI prompt command center.
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold mb-4 text-purple-600 tracking-normal">
+              PromptCrate
             </h1>
-            <p className="text-lg sm:text-xl text-gray-600 mb-10 max-w-2xl mx-auto font-normal">
-              Create, refine, and monetize prompts across any AI model — ChatGPT, Claude, Midjourney, and more.
+            <span className="inline-block text-base sm:text-lg font-semibold tracking-wide text-gray-700 mb-6">Create. Refine. Monetize.</span>
+            <p className="max-w-2xl text-base sm:text-lg text-gray-600 mb-10">
+              The ultimate platform for prompt engineers to build, manage, test, and sell their AI prompts. 
+              Unlock your creativity and join a thriving community.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8">
-              <a
-                href="/#waitlist"
-                className="bg-purple-600 text-white px-6 py-3 rounded-xl shadow hover:bg-purple-700 transition font-medium text-base"
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <Link 
+                href="/signup" 
+                className="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-white bg-purple-600 rounded-lg shadow-md hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
               >
-                Join the Waitlist
-              </a>
-              <a
-                href="/#features"
-                className="text-purple-600 px-6 py-3 rounded-xl font-medium hover:underline transition text-base"
+                Get Started for Free
+              </Link>
+              <Link 
+                href="/#mockup" 
+                className="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-gray-700 bg-gray-100 rounded-lg shadow-sm hover:bg-gray-200 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2"
               >
-                How it Works
-              </a>
-            </div>
-            <div className="mt-12 flex justify-center">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="w-full max-w-md md:max-w-lg lg:max-w-xl h-auto bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 rounded-2xl p-4 shadow-xl border border-gray-200"
-              >
-                <div className="w-full h-full bg-white rounded-lg shadow-inner p-3 flex flex-col aspect-[16/9]">
-                  {/* Top bar */}
-                  <div className="flex items-center gap-1.5 mb-2 flex-shrink-0">
-                    <span className="w-3 h-3 bg-red-400 rounded-full opacity-70"></span>
-                    <span className="w-3 h-3 bg-yellow-400 rounded-full opacity-70"></span>
-                    <span className="w-3 h-3 bg-green-400 rounded-full opacity-70"></span>
-                  </div>
-                  {/* Content Area - Made more generic */}
-                  <div className="flex-grow bg-gray-50 rounded p-3 opacity-80 flex flex-col justify-center items-center">
-                    <div className="h-3 bg-purple-200 rounded w-3/4 mb-1.5"></div>
-                    <div className="h-3 bg-purple-100 rounded w-1/2 mb-1.5"></div>
-                    <div className="h-3 bg-purple-100 rounded w-2/3"></div>
-                  </div>
-                </div>
-              </motion.div>
+                How It Works
+              </Link>
             </div>
           </motion.div>
         </section>
 
-        <FeatureSection id="features" showTitle={false} />
+        <TrustedBySection />
 
         <UIMockupSection />
 
@@ -393,53 +347,6 @@ export default function Home() {
                 </a>
               </div>
             </div>
-          </motion.div>
-        </section>
-
-        <section id="waitlist" className="max-w-3xl mx-auto px-6 py-24 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <h2 className="text-3xl sm:text-4xl font-semibold mb-6 text-gray-900">Be the First to Experience PromptCrate</h2>
-            <p className="text-lg text-gray-600 mb-10 max-w-xl mx-auto">
-              Join our waitlist to get early access, exclusive updates, and a special launch day offer.
-            </p>
-            
-            {isSubmitted ? (
-              <div className="bg-green-50 border border-green-300 text-green-700 px-6 py-4 rounded-lg text-center">
-                <CheckCircle className="inline-block mr-2 mb-1" size={22}/>
-                <span className="font-semibold">Thanks for joining!</span> We'll be in touch soon.
-              </div>
-            ) : (
-              <form onSubmit={handleWaitlistSubmit} className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto">
-                <div className="relative flex-grow">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                  <input 
-                    type="email" 
-                    name="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@example.com" 
-                    className="w-full pl-10 pr-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 shadow-sm text-gray-800" 
-                    required 
-                  />
-                </div>
-                <button 
-                  type="submit"
-                  className="bg-purple-600 text-white px-6 py-3 rounded-lg shadow hover:bg-purple-700 transition font-medium text-base whitespace-nowrap"
-                >
-                  Join Waitlist
-                </button>
-              </form>
-            )}
-            {error && <p className="text-red-500 text-sm mt-3">{error}</p>}
-
-            <p className="text-xs text-gray-500 mt-6">
-              We respect your privacy. No spam, unsubscribe anytime.
-            </p>
           </motion.div>
         </section>
       </main>

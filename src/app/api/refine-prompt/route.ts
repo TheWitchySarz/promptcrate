@@ -1,85 +1,77 @@
-import OpenAI from 'openai';
-import { NextRequest, NextResponse } from 'next/server';
+import { streamText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
+import { NextRequest } from 'next/server';
+
+// Optional: Set the runtime to edge for best performance
+export const runtime = 'edge';
 
 // Ensure your OpenAI API key is set in your .env.local file
 // OPENAI_API_KEY=your_key_here
 
-const openai = new OpenAI({
+// Initialize the OpenAI provider
+const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
 export async function POST(req: NextRequest) {
-  console.log("[/api/refine-prompt] Received POST request");
+  console.log('Refine API route hit (AI SDK streamText)');
   try {
     const body = await req.json();
-    const userPrompt = body.prompt;
-    const targetModel = body.model || 'the specified AI model';
-    console.log("[/api/refine-prompt] User Prompt:", userPrompt);
-    console.log("[/api/refine-prompt] Target Model:", targetModel);
-
-    if (!userPrompt) {
-      console.log("[/api/refine-prompt] Error: Prompt is required");
-      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
-    }
+    const { prompt: userPrompt, model: modelId } = body; // Renamed prompt to userPrompt to avoid conflict with streamText's prompt arg
+    console.log('Received for refinement (AI SDK streamText):', { userPrompt, modelId });
 
     if (!process.env.OPENAI_API_KEY) {
-      console.error('[/api/refine-prompt] Error: OpenAI API key not configured.');
-      return NextResponse.json({ error: 'AI service not configured.' }, { status: 500 });
+      console.error('OPENAI_API_KEY not configured');
+      return new Response(JSON.stringify({ error: 'OpenAI API key not configured.' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
-    console.log("[/api/refine-prompt] OpenAI API key found.");
 
-    // You can customize the model and the instruction to the AI
-    const instruction = 
-`You are an expert AI prompt engineer. 
-Review the following user-submitted prompt and rewrite it to be more effective, clear, and comprehensive. This prompt is intended for use with the ${targetModel}. 
-Consider common pitfalls like vagueness, lack of context, or overly complex phrasing. 
-Aim to enhance clarity, specificity, and potential for generating high-quality responses tailored for ${targetModel}. 
-Do not add any conversational fluff or explanations, just return the refined prompt text.
+    if (!userPrompt) {
+      console.log('User prompt is missing');
+      return new Response(JSON.stringify({ error: 'Prompt is required.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
 
-Original Prompt:
----
-${userPrompt}
----
-Refined Prompt:`;
-    console.log("[/api/refine-prompt] Instruction for OpenAI:", instruction);
+    const selectedModel = modelId || 'gpt-3.5-turbo';
+    console.log('Using model (AI SDK streamText):', selectedModel);
+    console.log('Constructing instruction for OpenAI (AI SDK streamText)');
 
-    console.log("[/api/refine-prompt] Calling OpenAI API...");
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // Or your preferred model, e.g., "gpt-4"
-      messages: [
-        {
-          role: "user", 
-          content: instruction,
-        }
-      ],
-      temperature: 0.5, // Adjust for creativity vs. determinism
-      max_tokens: 1024, // Adjust as needed for expected prompt length
-      top_p: 1,
-      frequency_penalty: 0,
-      presence_penalty: 0,
+    const systemInstruction = `You are an expert prompt engineer. Refine the following prompt to be more effective, clear, and concise.
+The user is trying to use it with the ${selectedModel} model.
+Do not add any preamble or explanation, just provide the refined prompt.`;
+
+    console.log('Calling OpenAI API via streamText (AI SDK)...');
+
+    const result = await streamText({
+      model: openai(selectedModel), // Pass the modelId to the provider
+      system: systemInstruction,
+      prompt: userPrompt, // The user's actual prompt content
+      temperature: 0.7,
+      maxTokens: 500, 
     });
-    console.log("[/api/refine-prompt] OpenAI API call completed.");
+    console.log('OpenAI API call initiated via streamText (AI SDK).');
 
-    const rawResponseContent = completion.choices[0]?.message?.content;
-    console.log("[/api/refine-prompt] Raw response content from OpenAI:", rawResponseContent);
+    // Respond with the raw text stream
+    return new Response(result.textStream, { 
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
 
-    const refinedPrompt = rawResponseContent?.trim();
-
-    if (!refinedPrompt) {
-      console.log("[/api/refine-prompt] Error: Failed to get a refined prompt from AI. Raw content was:", rawResponseContent);
-      return NextResponse.json({ error: 'Failed to get a refined prompt from AI' }, { status: 500 });
-    }
-    console.log("[/api/refine-prompt] Refined prompt:", refinedPrompt);
-
-    return NextResponse.json({ refinedPrompt });
-
-  } catch (error) {
-    console.error('[/api/refine-prompt] Error in POST handler:', error);
-    let errorMessage = 'An unexpected error occurred';
+  } catch (error: any) {
+    console.error('Error in refine-prompt (AI SDK streamText):', error);
+    let errorMessage = 'An unknown error occurred.';
+    let errorStack = '';
     if (error instanceof Error) {
-        errorMessage = error.message;
+      errorMessage = error.message;
+      errorStack = error.stack || '';
     }
-    // More specific error handling can be added here based on OpenAI error types
-    return NextResponse.json({ error: 'Failed to refine prompt', details: errorMessage }, { status: 500 });
+    // Ensure that even in error cases, we're sending a JSON response if not streaming
+    return new Response(JSON.stringify({ error: 'Failed to refine prompt.', details: errorMessage, stack: errorStack }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 } 
