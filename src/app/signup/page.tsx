@@ -1,16 +1,19 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Navbar from '../(components)/layout/Navbar';
 import Footer from '../(components)/shared/Footer';
-import { Mail, Lock, Github, LogIn, User as UserIcon } from 'lucide-react';
+import { Mail, Lock, Github, LogIn, User as UserIcon, Loader2 } from 'lucide-react';
 import { useAuth } from '../(contexts)/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function SignupPage() {
+// Helper component to use useSearchParams because SignupPage is not wrapped in Suspense boundary by default
+function SignupForm() {
   const { signUpWithEmail, signInWithGoogle, isLoggedIn, isLoading: authIsLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const stripeSessionIdFromUrl = searchParams.get('stripe_session_id');
 
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -18,47 +21,82 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [finalizingPro, setFinalizingPro] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (isLoggedIn && !authIsLoading) {
       router.push('/app/editor');
     }
-  }, [isLoggedIn, authIsLoading, router]);
+  }, [isLoggedIn, authIsLoading, router, stripeSessionIdFromUrl]);
 
   const handleEmailSignup = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setMessage(null);
+    setLoading(true);
+    setFinalizingPro(false);
 
     if (!username.trim()) {
       setError('Username is required.');
+      setLoading(false);
       return;
     }
 
     if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
       setError('Username must be 3-20 characters long and can only contain letters, numbers, and underscores.');
+      setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    const { error: signUpError } = await signUpWithEmail(email, password, username);
-    setLoading(false);
+    const { data: signUpData, error: signUpError } = await signUpWithEmail(email, password, username);
 
     if (signUpError) {
       setError(signUpError.message);
-    } else {
-      setMessage('Check your email for a confirmation link! After confirming, you can log in.');
+      setLoading(false);
+      return;
+    }
+
+    if (signUpData && signUpData.user && stripeSessionIdFromUrl) {
+      setFinalizingPro(true);
+      try {
+        const finalizeResponse = await fetch('/api/stripe/finalize-pro-signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: signUpData.user.id, stripeSessionId: stripeSessionIdFromUrl }),
+        });
+        const finalizeData = await finalizeResponse.json();
+
+        if (!finalizeResponse.ok) {
+          throw new Error(finalizeData.error || 'Failed to finalize Pro plan. Please contact support.');
+        }
+        setMessage('Welcome to PromptCrate Pro! Please check your email to confirm your account, then log in to access all features.');
+        setUsername('');
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+      } catch (finalizeError: any) {
+        console.error("Error finalizing Pro signup:", finalizeError);
+        setError(`Account created, but Pro plan activation failed: ${finalizeError.message}. Please confirm email & contact support with session ID: ${stripeSessionIdFromUrl}`);
+      } finally {
+        setFinalizingPro(false);
+      }
+    } else if (signUpData) {
+      setMessage('Account created! Check your email for a confirmation link. After confirming, you can log in.');
       setUsername('');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
+    } else {
+      setError('An unexpected error occurred during signup.');
     }
+    setLoading(false);
   };
 
   const handleOAuthSignup = async (provider: 'google' | 'github') => {
@@ -66,20 +104,22 @@ export default function SignupPage() {
     setMessage(null);
     setLoading(true);
 
+    if (stripeSessionIdFromUrl) {
+      setMessage("Signing up with Google/GitHub after Stripe payment is not yet fully integrated for automatic Pro activation. Please complete signup, then contact support if your Pro plan isn't active.");
+    }
+
     if (provider === 'google') {
       const { error: googleError } = await signInWithGoogle();
       if (googleError) {
         setError(googleError.message);
-        setLoading(false);
       }
     } else if (provider === 'github') {
       setError('GitHub signup is not yet implemented.');
-      console.log("Attempting GitHub Auth - to be implemented using signInWithOAuth({ provider: 'github' })");
       setLoading(false);
     }
   };
 
-  if (authIsLoading || isLoggedIn) {
+  if (authIsLoading || (isLoggedIn && !stripeSessionIdFromUrl)) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Navbar />
@@ -98,7 +138,7 @@ export default function SignupPage() {
         <div className="max-w-md w-full space-y-8 bg-white p-8 sm:p-10 rounded-xl shadow-lg">
           <div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Create your PromptCrate account
+              {stripeSessionIdFromUrl ? 'Complete Your Pro Account' : 'Create your PromptCrate account'}
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
               Or{' '}
@@ -111,7 +151,7 @@ export default function SignupPage() {
           <div className="space-y-3">
             <button
               onClick={() => handleOAuthSignup('google')}
-              disabled={loading}
+              disabled={loading || finalizingPro}
               className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
               <LogIn size={20} className="mr-2 text-red-500" />
@@ -119,7 +159,7 @@ export default function SignupPage() {
             </button>
             <button
               onClick={() => handleOAuthSignup('github')}
-              disabled={loading}
+              disabled={loading || finalizingPro}
               className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
             >
               <Github size={20} className="mr-2 text-gray-800" />
@@ -154,7 +194,7 @@ export default function SignupPage() {
                     onChange={(e) => setUsername(e.target.value)}
                     className="appearance-none rounded-t-md relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
                     placeholder="Username (3-20 chars, a-z, 0-9, _)"
-                    disabled={loading}
+                    disabled={loading || finalizingPro}
                   />
                 </div>
               </div>
@@ -174,7 +214,7 @@ export default function SignupPage() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="appearance-none rounded-none relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
                     placeholder="Email address"
-                    disabled={loading}
+                    disabled={loading || finalizingPro}
                   />
                 </div>
               </div>
@@ -194,7 +234,7 @@ export default function SignupPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     className="appearance-none rounded-none relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
                     placeholder="Password (min. 6 characters)"
-                    disabled={loading}
+                    disabled={loading || finalizingPro}
                   />
                 </div>
               </div>
@@ -214,7 +254,7 @@ export default function SignupPage() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="appearance-none rounded-b-md relative block w-full px-3 py-3 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
                     placeholder="Confirm Password"
-                    disabled={loading}
+                    disabled={loading || finalizingPro}
                   />
                 </div>
               </div>
@@ -226,10 +266,15 @@ export default function SignupPage() {
             <div>
               <button
                 type="submit"
-                disabled={loading || authIsLoading}
+                disabled={loading || authIsLoading || finalizingPro}
                 className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 transition-colors"
               >
-                {loading || authIsLoading ? 'Processing...' : 'Sign up'}
+                {loading || authIsLoading || finalizingPro ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    {finalizingPro ? 'Finalizing Pro Plan...' : 'Processing...'}
+                  </>
+                ) : (stripeSessionIdFromUrl ? 'Create Pro Account' : 'Sign up')}
               </button>
             </div>
           </form>
@@ -237,5 +282,14 @@ export default function SignupPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+// Wrap SignupForm with Suspense for useSearchParams
+export default function SignupPage() {
+  return (
+    <Suspense fallback={<div>Loading page...</div>}>
+      <SignupForm />
+    </Suspense>
   );
 } 

@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     });
 
     const successUrl = `${appUrl}/account/settings?stripe_checkout=success&session_id={CHECKOUT_SESSION_ID}`;
-    const cancelUrl = `${appUrl}/`; // Redirect to homepage
+    const cancelUrl = `${appUrl}/account/settings`; // Changed to /account/settings
 
     let stripeCustomerId: string | undefined;
     const { data: profileData, error: profileError } = await supabase

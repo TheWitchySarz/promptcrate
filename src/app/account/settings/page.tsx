@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/app/(contexts)/AuthContext';
 import Navbar from '@/app/(components)/layout/Navbar';
 import Footer from '@/app/(components)/shared/Footer';
 import { ChevronRight, AlertTriangle, UserCircle, CreditCard, ShieldOff, Edit, Users, PlusCircle, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 // Define Team interface based on API response
 interface TeamOwner {
@@ -25,9 +26,11 @@ interface Team {
   user_team_role: string | null; // User's role in this specific team
 }
 
-const AccountSettingsPage = () => {
-  const { user, username, userRole, isLoading: authLoading, isLoggedIn, signOut } = useAuth();
+// Helper component to use useSearchParams
+function AccountSettingsContent() {
+  const { user, username, userRole, isLoading: authLoading, isLoggedIn, signOut, refreshAuthStatus } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Real user email from context, or fallback
   const displayEmail = user?.email || 'Loading...';
@@ -78,26 +81,12 @@ const AccountSettingsPage = () => {
     try {
       const response = await fetch('/api/stripe/checkout-sessions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Optionally, you could pass the specific price ID if you have multiple upgrade options
-        // body: JSON.stringify({ priceId: 'your_pro_price_id_here' }), 
+        headers: { 'Content-Type': 'application/json' },
       });
-
       const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session.');
-      }
-
-      if (data.url) {
-        router.push(data.url); // Redirect to Stripe Checkout
-        // setIsRedirectingToCheckout will remain true until navigation away from page
-        return; 
-      } else {
-        throw new Error('No checkout URL received.');
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to create checkout session.');
+      if (data.url) router.push(data.url);
+      else throw new Error('No checkout URL received.');
     } catch (error) {
       console.error("Error redirecting to Stripe Checkout:", error);
       setCheckoutError((error as Error).message);
@@ -108,11 +97,9 @@ const AccountSettingsPage = () => {
   // Placeholder actions (will be expanded)
   const handleCancelSubscription = async () => {
     if (window.confirm('Are you sure you want to cancel your subscription? This will downgrade you to the Free plan at the end of your current billing cycle.')) {
-      // Placeholder: Actual cancellation logic will involve API call to backend/Stripe
-      // and then updating user's plan in Supabase.
-      // For now, just an alert. The user is NOT actually downgraded by this mock.
-      alert('Subscription cancellation requested. Changes will reflect at the end of your billing cycle.');
-      // Example: await cancelSubscriptionAPI(); // This would then trigger AuthContext update via onAuthStateChange or profile refresh
+      alert('Subscription cancellation requested. Actual cancellation API to be implemented.');
+      // Example: await cancelSubscriptionAPI(); 
+      // refreshAuthStatus(); // After backend confirms cancellation and plan update via webhook
     }
   };
 
@@ -174,11 +161,24 @@ const AccountSettingsPage = () => {
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
       router.push('/login?message=Please+log+in+to+view+account+settings.');
+    } else if (isLoggedIn) {
+      if (userRole === 'pro' || userRole === 'enterprise') {
+        fetchTeams();
+      }
+      // Handle Stripe checkout success notification
+      if (searchParams.get('stripe_checkout') === 'success') {
+        toast.success("Upgrade successful! Pro features are now unlocked.", { duration: 6000 });
+        if (typeof refreshAuthStatus === 'function') {
+            refreshAuthStatus(); // Refresh context to get new userRole
+        } else {
+            console.warn("AuthContext does not have refreshAuthStatus, attempting router.refresh() as fallback.")
+            router.refresh(); // Next.js router function to re-fetch data for the current route
+        }
+        // Clean the URL
+        router.replace('/account/settings', { scroll: false }); 
+      }
     }
-    if (isLoggedIn && (userRole === 'pro' || userRole === 'enterprise')) {
-      fetchTeams();
-    }
-  }, [authLoading, isLoggedIn, router, userRole]); // Added userRole to dependency array
+  }, [authLoading, isLoggedIn, router, userRole, searchParams, refreshAuthStatus]); // Added dependencies
 
   if (authLoading || !isLoggedIn) {
     return (
@@ -236,44 +236,66 @@ const AccountSettingsPage = () => {
                 <p className="text-lg text-gray-800 font-semibold capitalize">{userRole || 'N/A'}</p>
               </div>
               
+              {checkoutError && (
+                <div className="rounded-md bg-red-50 p-4 my-3">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <AlertTriangle className="h-5 w-5 text-red-400" aria-hidden="true" />
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-red-800">Checkout Error</h3>
+                      <div className="mt-2 text-sm text-red-700">
+                        <p>{checkoutError}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col sm:flex-row gap-3">
-                {(userRole === 'free' || userRole === 'pro') && (
+                {(userRole === 'free' || userRole === null ) && (
                   <button
-                    onClick={userRole === 'free' ? handleUpgradeToProClick : () => router.push('/#pricing')}
+                    onClick={handleUpgradeToProClick}
                     disabled={isRedirectingToCheckout}
                     className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-70"
                   >
-                    {isRedirectingToCheckout && userRole === 'free' ? (
+                    {isRedirectingToCheckout ? (
                       <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Processing...</>
                     ) : (
-                      userRole === 'free' ? 'Upgrade to Pro' : 'Change Plan'
+                       'Upgrade to Pro'
                     )}
                   </button>
                 )}
                 {(userRole === 'pro' || userRole === 'enterprise') && (
-                  <button
-                    onClick={handleCancelSubscription}
-                    className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                  >
-                    Cancel Subscription
-                  </button>
+                  <>
+                    <button
+                      onClick={handleCancelSubscription} 
+                      className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                    >
+                      Cancel Subscription
+                    </button>
+                    {/* <button 
+                      onClick={() => router.push('/#pricing')} 
+                      className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      Change Plan (to #pricing)
+                    </button> */}
+                     <button 
+                        onClick={handlePauseSubscription}
+                        className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                        >
+                        Pause Subscription
+                    </button>
+                  </>
                 )}
               </div>
-              <button
-                  onClick={handlePauseSubscription}
-                  className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Pause Subscription
-              </button>
-               <div>
-                <Link href="/account/billing" className="text-sm text-purple-600 hover:text-purple-800 font-medium">
-                    View Billing History
-                </Link>
-              </div>
+              {userRole === 'pro' && (
+                <p className="text-sm text-gray-500 mt-2"></p>
+              )}
+              {userRole === 'enterprise' && (
+                <p className="text-sm text-gray-500 mt-2">You are on the Enterprise plan. Contact your account manager for changes.</p>
+              )}
             </div>
-            {checkoutError && (
-              <p className="mt-2 text-sm text-red-600">{`Error: ${checkoutError}`}</p>
-            )}
           </section>
 
           {/* Team Management Section - Only for Pro and Enterprise users */}
@@ -378,6 +400,15 @@ const AccountSettingsPage = () => {
       </main>
       <Footer />
     </div>
+  );
+}
+
+// Wrap AccountSettingsContent with Suspense for useSearchParams
+const AccountSettingsPage = () => {
+  return (
+    <Suspense fallback={ <div className="flex flex-col min-h-screen"><Navbar /><main className="flex-grow flex items-center justify-center bg-gray-100"><p className="text-gray-700">Loading account settings...</p></main><Footer /></div> }>
+      <AccountSettingsContent />
+    </Suspense>
   );
 };
 

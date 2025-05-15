@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import FeatureSection from "./(components)/FeatureSection";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle, Mail, Loader2 } from 'lucide-react';
 import Navbar from './(components)/layout/Navbar';
 import Footer from './(components)/shared/Footer';
@@ -234,18 +234,23 @@ function WhyPromptCrateSection() {
 }
 
 export default function Home() {
-  const { isLoggedIn, userRole } = useAuth();
+  const { isLoggedIn, userRole, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
-  const [isRedirectingToCheckout, setIsRedirectingToCheckout] = useState(false);
-  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  
+  // State for logged-in user upgrade flow
+  const [isUpgradingUser, setIsUpgradingUser] = useState(false);
+  const [upgradeUserError, setUpgradeUserError] = useState<string | null>(null);
 
-  const handleUpgradeToProClick = async () => {
-    if (!isLoggedIn) {
-      router.push('/signup?plan=pro');
-      return;
-    }
-    setIsRedirectingToCheckout(true);
-    setCheckoutError(null);
+  // State for unauthenticated user direct to checkout flow
+  const [isRedirectingDirect, setIsRedirectingDirect] = useState(false);
+  const [directCheckoutError, setDirectCheckoutError] = useState<string | null>(null);
+
+  // Handler for logged-in free users to upgrade
+  const handleUpgradeLoggedInUserToPro = async () => {
+    if (!isLoggedIn || userRole !== 'free') return; // Safety check
+
+    setIsUpgradingUser(true);
+    setUpgradeUserError(null);
     try {
       const response = await fetch('/api/stripe/checkout-sessions', {
         method: 'POST',
@@ -253,20 +258,80 @@ export default function Home() {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to create checkout session.');
+        throw new Error(data.error || 'Failed to create checkout session for upgrade.');
       }
       if (data.url) {
         router.push(data.url);
         return;
       } else {
-        throw new Error('No checkout URL received.');
+        throw new Error('No checkout URL received for upgrade.');
       }
     } catch (error) {
-      console.error("Error redirecting to Stripe Checkout from homepage:", error);
-      setCheckoutError((error as Error).message);
-      setIsRedirectingToCheckout(false);
+      console.error("Error upgrading logged-in user to Pro:", error);
+      setUpgradeUserError((error as Error).message);
+      setIsUpgradingUser(false);
     }
   };
+
+  // Handler for unauthenticated users going directly to Pro checkout
+  const handleDirectToProCheckout = async () => {
+    if (isLoggedIn) return; // Should only be called if not logged in
+
+    setIsRedirectingDirect(true);
+    setDirectCheckoutError(null);
+    // UI prompt for redirection can be handled by button text changing to "Redirecting..."
+    // If a more explicit message/modal is needed, it can be added here.
+    // For example: toast('Redirecting to secure checkout...');
+
+    try {
+      const response = await fetch('/api/stripe/unauth-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create direct checkout session.');
+      }
+      if (data.url) {
+        router.push(data.url);
+        // setIsRedirectingDirect will remain true until navigation
+        return; 
+      } else {
+        throw new Error('No direct checkout URL received.');
+      }
+    } catch (error) {
+      console.error("Error in direct to Pro checkout flow:", error);
+      setDirectCheckoutError((error as Error).message);
+      setIsRedirectingDirect(false);
+    }
+  };
+
+  // Determine button text and action based on auth state
+  let proButtonText = 'Choose Pro';
+  let proButtonAction = () => {};
+  let proButtonDisabled = false;
+  let currentProButtonError = directCheckoutError; // Default to direct checkout error
+
+  if (isAuthLoading) {
+    proButtonText = 'Loading...';
+    proButtonDisabled = true;
+  } else if (isLoggedIn) {
+    if (userRole === 'free') {
+      proButtonText = isUpgradingUser ? 'Processing...' : 'Upgrade to Pro';
+      proButtonAction = handleUpgradeLoggedInUserToPro;
+      proButtonDisabled = isUpgradingUser;
+      currentProButtonError = upgradeUserError;
+    } else if (userRole === 'pro' || userRole === 'enterprise') {
+      proButtonText = 'Manage Plan';
+      proButtonAction = () => router.push('/account/settings');
+    }
+  } else {
+    // Not logged in
+    proButtonText = isRedirectingDirect ? 'Redirecting...' : 'Choose Pro';
+    proButtonAction = handleDirectToProCheckout;
+    proButtonDisabled = isRedirectingDirect;
+    currentProButtonError = directCheckoutError;
+  }
 
   return (
     <div className="bg-white min-h-screen w-full font-sans text-gray-900">
@@ -360,27 +425,17 @@ export default function Home() {
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Priority support</li>
                 </ul>
                 <button 
-                  onClick={() => {
-                    if (isLoggedIn) {
-                      if (userRole === 'free') {
-                        handleUpgradeToProClick();
-                      } else if (userRole === 'pro' || userRole === 'enterprise') {
-                        router.push('/account/settings');
-                      }
-                    } else {
-                      router.push('/signup?plan=pro');
-                    }
-                  }}
-                  disabled={isRedirectingToCheckout && isLoggedIn && userRole === 'free'}
+                  onClick={proButtonAction}
+                  disabled={proButtonDisabled || isAuthLoading}
                   className="w-full mt-auto px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition text-center disabled:opacity-70"
                 >
-                  {isRedirectingToCheckout && isLoggedIn && userRole === 'free' ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin inline-block" />Processing...</>
+                  {(isUpgradingUser && isLoggedIn && userRole === 'free') || (isRedirectingDirect && !isLoggedIn) ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin inline-block" />{proButtonText}</>
                   ) : (
-                    isLoggedIn && (userRole === 'pro' || userRole === 'enterprise') ? 'Manage Plan' : 'Choose Pro'
+                    proButtonText
                   )}
                 </button>
-                {checkoutError && <p className="text-xs text-red-600 mt-1 text-center">{`Error: ${checkoutError}`}</p>}
+                {currentProButtonError && <p className="text-xs text-red-600 mt-1 text-center">{`Error: ${currentProButtonError}`}</p>}
               </div>
 
               {/* Enterprise Plan */}
