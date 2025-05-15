@@ -3,11 +3,13 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import FeatureSection from "./(components)/FeatureSection";
 import { useState } from 'react';
-import { CheckCircle, Mail } from 'lucide-react';
+import { CheckCircle, Mail, Loader2 } from 'lucide-react';
 import Navbar from './(components)/layout/Navbar';
 import Footer from './(components)/shared/Footer';
 import Link from 'next/link';
 import TrustedBySection from "./(components)/TrustedBySection";
+import { useAuth } from './(contexts)/AuthContext';
+import { useRouter } from 'next/navigation';
 
 function UIMockupSection() {
   const [activeTab, setActiveTab] = useState("editor");
@@ -232,6 +234,40 @@ function WhyPromptCrateSection() {
 }
 
 export default function Home() {
+  const { isLoggedIn, userRole } = useAuth();
+  const router = useRouter();
+  const [isRedirectingToCheckout, setIsRedirectingToCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  const handleUpgradeToProClick = async () => {
+    if (!isLoggedIn) {
+      router.push('/signup?plan=pro');
+      return;
+    }
+    setIsRedirectingToCheckout(true);
+    setCheckoutError(null);
+    try {
+      const response = await fetch('/api/stripe/checkout-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session.');
+      }
+      if (data.url) {
+        router.push(data.url);
+        return;
+      } else {
+        throw new Error('No checkout URL received.');
+      }
+    } catch (error) {
+      console.error("Error redirecting to Stripe Checkout from homepage:", error);
+      setCheckoutError((error as Error).message);
+      setIsRedirectingToCheckout(false);
+    }
+  };
+
   return (
     <div className="bg-white min-h-screen w-full font-sans text-gray-900">
       <Navbar />
@@ -301,9 +337,9 @@ export default function Home() {
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Basic editor features</li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Community access</li>
                 </ul>
-                <a href="/signup?plan=free" className="w-full mt-auto px-6 py-3 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition text-center"> 
+                <Link href="/signup?plan=free" className="w-full mt-auto px-6 py-3 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition text-center"> 
                   Get Started
-                </a>
+                </Link>
               </div>
 
               {/* Pro Plan */}
@@ -323,9 +359,28 @@ export default function Home() {
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Sell on Marketplace (20% commission)</li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Priority support</li>
                 </ul>
-                <a href="/signup?plan=pro" className="w-full mt-auto px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition text-center">
-                  Choose Pro
-                </a>
+                <button 
+                  onClick={() => {
+                    if (isLoggedIn) {
+                      if (userRole === 'free') {
+                        handleUpgradeToProClick();
+                      } else if (userRole === 'pro' || userRole === 'enterprise') {
+                        router.push('/account/settings');
+                      }
+                    } else {
+                      router.push('/signup?plan=pro');
+                    }
+                  }}
+                  disabled={isRedirectingToCheckout && isLoggedIn && userRole === 'free'}
+                  className="w-full mt-auto px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition text-center disabled:opacity-70"
+                >
+                  {isRedirectingToCheckout && isLoggedIn && userRole === 'free' ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin inline-block" />Processing...</>
+                  ) : (
+                    isLoggedIn && (userRole === 'pro' || userRole === 'enterprise') ? 'Manage Plan' : 'Choose Pro'
+                  )}
+                </button>
+                {checkoutError && <p className="text-xs text-red-600 mt-1 text-center">{`Error: ${checkoutError}`}</p>}
               </div>
 
               {/* Enterprise Plan */}
