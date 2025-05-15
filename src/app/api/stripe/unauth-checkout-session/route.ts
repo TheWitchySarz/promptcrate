@@ -11,6 +11,13 @@ const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
   typescript: true,
 }) : null;
 
+// Get the request host for fallback URL
+const getUrlFromRequest = (request: NextRequest): string => {
+  const host = request.headers.get('host') || 'promptcrate.ai';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  return `${protocol}://${host}`;
+};
+
 export async function POST(request: NextRequest) {
   // Check for missing credentials inside the handler
   if (missingCredentials) {
@@ -23,18 +30,16 @@ export async function POST(request: NextRequest) {
   }
 
   const proPriceId = process.env.STRIPE_PRO_MONTHLY_PRICE_ID;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  // Use environment variable or fallback to request host
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || getUrlFromRequest(request);
 
   if (!proPriceId) {
     console.error('Stripe Unauth Checkout: STRIPE_PRO_MONTHLY_PRICE_ID not set.');
     return NextResponse.json({ error: 'Pro plan Price ID not configured.' }, { status: 500 });
   }
-  if (!appUrl) {
-    console.error('Stripe Unauth Checkout: NEXT_PUBLIC_APP_URL not set.');
-    return NextResponse.json({ error: 'Application URL not configured.' }, { status: 500 });
-  }
 
   try {
+    console.log(`Using app URL: ${appUrl}`);
     const successUrl = `${appUrl}/signup?stripe_session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${appUrl}/#pricing`; // Or simply `${appUrl}/`
 

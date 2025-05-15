@@ -3,6 +3,13 @@ import { cookies } from 'next/headers';
 import { type NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
+// Get the request host for fallback URL
+const getUrlFromRequest = (request: NextRequest): string => {
+  const host = request.headers.get('host') || 'promptcrate.ai';
+  const protocol = host.includes('localhost') ? 'http' : 'https';
+  return `${protocol}://${host}`;
+};
+
 export async function POST(request: NextRequest) {
   const cookieStore = cookies();
   const supabase = createServerClient(
@@ -38,13 +45,14 @@ export async function POST(request: NextRequest) {
 
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
     const proPriceId = process.env.STRIPE_PRO_MONTHLY_PRICE_ID || '';
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
+    // Use environment variable or fallback to request host
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || getUrlFromRequest(request);
 
     // Validate required environment variables
     const missingVars = [];
     if (!stripeSecretKey) missingVars.push('STRIPE_SECRET_KEY');
     if (!proPriceId) missingVars.push('STRIPE_PRO_MONTHLY_PRICE_ID');
-    if (!appUrl) missingVars.push('NEXT_PUBLIC_APP_URL');
+    // Don't check appUrl anymore since we have a fallback
 
     if (missingVars.length > 0) {
       console.error(`Stripe Checkout: Missing required environment variables: ${missingVars.join(', ')}`);
@@ -61,6 +69,7 @@ export async function POST(request: NextRequest) {
       typescript: true,
     });
 
+    console.log(`Using app URL: ${appUrl}`);
     const successUrl = `${appUrl}/account/settings?stripe_checkout=success&session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${appUrl}/account/settings`; // Changed to /account/settings
 
