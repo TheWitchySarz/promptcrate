@@ -129,7 +129,7 @@ function UIMockupSection() {
               {/* Editor Footer/Actions */}
               <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-4">
                 <Link
-                  href="/signup"
+                  href="/#pricing"
                   className="px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors text-center w-full sm:w-auto"
                 >
                   Save Draft
@@ -188,7 +188,7 @@ function UIMockupSection() {
                     <p className="text-xs text-gray-400 mb-2">Model: <span className="font-medium text-gray-600">{prompt.model}</span></p>
                     <p className="text-lg font-bold text-gray-800 mb-3">{prompt.price}</p>
                     <Link 
-                      href="/signup"
+                      href="/#pricing"
                       className="mt-auto w-full px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors text-center"
                     >
                       View Prompt
