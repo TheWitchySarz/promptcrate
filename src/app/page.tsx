@@ -320,7 +320,7 @@ export default function Home() {
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Unlimited personal prompts</li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Advanced editor & AI Refinement</li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Create team libraries (up to 5 users)</li>
-                  <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Sell on Marketplace (10% commission)</li>
+                  <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Sell on Marketplace (20% commission)</li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Priority support</li>
                 </ul>
                 <a href="/signup?plan=pro" className="w-full mt-auto px-6 py-3 rounded-lg bg-purple-600 text-white font-medium hover:bg-purple-700 transition text-center">
