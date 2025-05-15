@@ -37,10 +37,20 @@ const defaultNewPrompt: Omit<Prompt, 'id' | 'user_id' | 'created_at' | 'updated_
   version: 1,
 };
 
+function SearchParamsHandler({ onParams }: { onParams: (params: URLSearchParams) => void }) {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    onParams(searchParams);
+  }, [searchParams, onParams]);
+  
+  return null;
+}
+
 function PromptEditorContent() {
   const { isLoggedIn, userRole, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null);
 
   const [promptsList, setPromptsList] = useState<Prompt[]>([]);
   const [currentPrompt, setCurrentPrompt] = useState<Prompt | (Omit<Prompt, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { id: null })>(defaultNewPrompt);
@@ -63,12 +73,13 @@ function PromptEditorContent() {
 
   // Effect to load prompt from query parameters (e.g., from marketplace)
   useEffect(() => {
+    if (!searchParams) return;
+    
     const queryTitle = searchParams.get('title');
     const queryPrompt = searchParams.get('prompt');
     const queryModel = searchParams.get('model');
 
     if (queryTitle && queryPrompt) {
-      // When loading from query params, it's a new unsaved prompt inspired by marketplace/shared link
       setCurrentPrompt({
         ...defaultNewPrompt,
         title: queryTitle,
@@ -238,6 +249,9 @@ function PromptEditorContent() {
   // Main Editor UI - Simplified layout
   return (
     <div className="min-h-screen flex flex-col bg-gray-900 text-white">
+      <Suspense fallback={<div>Loading search params...</div>}>
+        <SearchParamsHandler onParams={setSearchParams} />
+      </Suspense>
       <Navbar />
       <div className="flex-grow flex flex-row overflow-hidden h-[calc(100vh-var(--navbar-height,4rem))]">
         <PromptSidebar 

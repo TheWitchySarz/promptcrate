@@ -8,10 +8,20 @@ import { Mail, Lock, Github, LogIn as GoogleIcon } from 'lucide-react';
 import { useAuth } from '../(contexts)/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+function SearchParamsHandler({ onParams }: { onParams: (params: URLSearchParams) => void }) {
+  const searchParams = useSearchParams();
+  
+  useEffect(() => {
+    onParams(searchParams);
+  }, [searchParams, onParams]);
+  
+  return null;
+}
+
 function LoginContent() {
   const { signInWithEmail, signInWithGoogle, isLoggedIn, isLoading: authIsLoading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +30,7 @@ function LoginContent() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isLoggedIn && !authIsLoading) {
+    if (isLoggedIn && !authIsLoading && searchParams) {
       const redirectTo = searchParams.get('redirect_to');
       if (redirectTo && redirectTo.startsWith('/')) {
         router.push(redirectTo);
@@ -76,6 +86,9 @@ function LoginContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Suspense fallback={<div>Loading search params...</div>}>
+        <SearchParamsHandler onParams={setSearchParams} />
+      </Suspense>
       <Navbar />
       <main className="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8 bg-white p-8 sm:p-10 rounded-xl shadow-lg">
