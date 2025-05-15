@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/app/(contexts)/AuthContext';
 import Navbar from '@/app/(components)/layout/Navbar';
 import Footer from '@/app/(components)/shared/Footer';
-import { ChevronRight, AlertTriangle, UserCircle, CreditCard, ShieldOff, Edit } from 'lucide-react';
+import { ChevronRight, AlertTriangle, UserCircle, CreditCard, ShieldOff, Edit, Users, PlusCircle, Loader2 } from 'lucide-react';
 
 const AccountSettingsPage = () => {
   const { user, username, userRole, isLoading: authLoading, isLoggedIn, signOut } = useAuth();
@@ -15,6 +15,12 @@ const AccountSettingsPage = () => {
   // Real user email from context, or fallback
   const displayEmail = user?.email || 'Loading...';
   const displayUsername = username || (user ? 'Not set' : 'Loading...');
+
+  // State for Team Creation
+  const [teamName, setTeamName] = useState('');
+  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [teamCreationError, setTeamCreationError] = useState<string | null>(null);
+  const [teamCreationSuccess, setTeamCreationSuccess] = useState<string | null>(null);
 
   // Placeholder actions (will be expanded)
   const handleCancelSubscription = async () => {
@@ -46,6 +52,38 @@ const AccountSettingsPage = () => {
           alert("There was an error deleting your account. Please try again.");
         }
       }
+    }
+  };
+
+  const handleCreateTeam = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!teamName.trim()) {
+      setTeamCreationError('Team name cannot be empty.');
+      setTeamCreationSuccess(null);
+      return;
+    }
+    setIsCreatingTeam(true);
+    setTeamCreationError(null);
+    setTeamCreationSuccess(null);
+
+    try {
+      const response = await fetch('/api/teams', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: teamName.trim() }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create team');
+      }
+      setTeamCreationSuccess(`Team '${result.team.name}' created successfully!`);
+      setTeamName(''); // Clear input
+      // TODO: Optionally, refresh a list of teams displayed on this page (e.g., by fetching teams again)
+    } catch (error) {
+      setTeamCreationError((error as Error).message);
+    } finally {
+      setIsCreatingTeam(false);
     }
   };
 
@@ -142,6 +180,50 @@ const AccountSettingsPage = () => {
               </div>
             </div>
           </section>
+
+          {/* Team Management Section - Only for Pro and Enterprise users */}
+          {(userRole === 'pro' || userRole === 'enterprise') && (
+            <section className="bg-white shadow-lg rounded-xl p-6 sm:p-8 mb-8">
+              <h2 className="text-xl font-semibold text-gray-700 mb-6 flex items-center">
+                <Users className="mr-3 text-purple-600" size={28} /> Team Management
+              </h2>
+              {/* TODO: Display list of existing teams here */}
+              <div className="mt-6">
+                <h3 className="text-lg font-medium text-gray-800 mb-3">Create New Team</h3>
+                <form onSubmit={handleCreateTeam} className="space-y-4">
+                  <div>
+                    <label htmlFor="teamName" className="block text-sm font-medium text-gray-700">Team Name</label>
+                    <input 
+                      type="text" 
+                      id="teamName" 
+                      value={teamName}
+                      onChange={(e) => {
+                        setTeamName(e.target.value);
+                        setTeamCreationError(null); // Clear error when user types
+                        setTeamCreationSuccess(null); // Clear success when user types
+                      }}
+                      className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm text-gray-800"
+                      placeholder="Enter new team name"
+                      disabled={isCreatingTeam}
+                    />
+                  </div>
+                  {teamCreationError && <p className="text-sm text-red-600">{teamCreationError}</p>}
+                  {teamCreationSuccess && <p className="text-sm text-green-600">{teamCreationSuccess}</p>}
+                  <button 
+                    type="submit" 
+                    disabled={isCreatingTeam || !teamName.trim()}
+                    className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isCreatingTeam ? (
+                      <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Creating...</>
+                    ) : (
+                      <><PlusCircle size={18} className="mr-2" /> Create Team</>
+                    )}
+                  </button>
+                </form>
+              </div>
+            </section>
+          )}
 
           {/* Account Actions Section */}
           <section className="bg-white shadow-lg rounded-xl p-6 sm:p-8">
