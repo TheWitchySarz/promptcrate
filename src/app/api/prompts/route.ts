@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
 // Define a type for the expected prompt data
 interface PromptData {
@@ -16,7 +16,23 @@ interface PromptData {
 
 export async function POST(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options });
+        },
+      },
+    }
+  );
 
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -78,7 +94,23 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   const cookieStore = cookies();
-  const supabase = createServerClient({ cookies: () => cookieStore });
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options });
+        },
+      },
+    }
+  );
 
   try {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
