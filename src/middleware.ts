@@ -91,16 +91,13 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
+     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - /api (API routes, these should have their own auth checks if needed)
-     * - / (public landing page, but specific sub-routes like /login are handled above)
-     * - /public (any other public assets)
-     * - /pricing
-     * - /features
+     * - public (public assets folder if you have one, e.g. /public/img.png)
+     * This will include routes like /, /login, /signup, /app/*, /features, /pricing etc.
      */
-    '/((?!_next/static|_next/image|favicon.ico|api|public|pricing|features).*)(.+)',
-    '/', // Also match the root for redirecting logged-in users from public pages
+    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
   ],
 } 
