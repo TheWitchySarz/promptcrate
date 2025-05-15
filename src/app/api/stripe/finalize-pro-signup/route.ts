@@ -54,7 +54,12 @@ export async function POST(request: NextRequest) {
     const stripeCustomerId = typeof session.customer === 'string' ? session.customer : session.customer?.id;
     const stripeSubscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
     const stripeSubscriptionStatus = typeof session.subscription === 'string' ? null : session.subscription?.status; // e.g., 'active'
-    const customerEmailFromStripe = typeof session.customer === 'string' ? null : session.customer?.email; // Email collected by Stripe
+    
+    // Fix TypeScript error by ensuring we only access email if session.customer is a Customer object (with email) not a DeletedCustomer
+    let customerEmailFromStripe: string | null = null;
+    if (typeof session.customer !== 'string' && session.customer && 'email' in session.customer) {
+      customerEmailFromStripe = session.customer.email;
+    }
 
     if (!stripeCustomerId || !stripeSubscriptionId) {
       console.error(`Finalize Pro Signup: Missing customer or subscription ID from Stripe session ${stripeSessionId}`);
