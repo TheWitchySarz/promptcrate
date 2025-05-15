@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Navbar from '../(components)/layout/Navbar';
 import Footer from '../(components)/shared/Footer';
@@ -8,7 +8,7 @@ import { Mail, Lock, Github, LogIn as GoogleIcon } from 'lucide-react';
 import { useAuth } from '../(contexts)/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function LoginPage() {
+function LoginContent() {
   const { signInWithEmail, signInWithGoogle, isLoggedIn, isLoading: authIsLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -182,5 +182,21 @@ export default function LoginPage() {
       </main>
       <Footer />
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Navbar />
+        <main className="flex-grow flex items-center justify-center">
+          <p className="text-gray-700">Loading...</p>
+        </main>
+        <Footer />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 } 

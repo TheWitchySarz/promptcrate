@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/app/(contexts)/AuthContext';
 import Navbar from '@/app/(components)/layout/Navbar';
@@ -37,7 +37,7 @@ const defaultNewPrompt: Omit<Prompt, 'id' | 'user_id' | 'created_at' | 'updated_
   version: 1,
 };
 
-export default function PromptEditorPage() {
+function PromptEditorContent() {
   const { isLoggedIn, userRole, isLoading: authLoading, user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -262,5 +262,20 @@ export default function PromptEditorPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+export default function PromptEditorPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex flex-col">
+        <Navbar />
+        <main className="flex-grow flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+        </main>
+      </div>
+    }>
+      <PromptEditorContent />
+    </Suspense>
   );
 } 
