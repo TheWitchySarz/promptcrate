@@ -8,6 +8,23 @@ import Navbar from '@/app/(components)/layout/Navbar';
 import Footer from '@/app/(components)/shared/Footer';
 import { ChevronRight, AlertTriangle, UserCircle, CreditCard, ShieldOff, Edit, Users, PlusCircle, Loader2 } from 'lucide-react';
 
+// Define Team interface based on API response
+interface TeamOwner {
+  id: string;
+  email: string;
+  username: string | null;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  created_at: string;
+  plan: string; // Plan of the team itself
+  owner_id: string;
+  users: TeamOwner; // Renamed from 'owner' in previous thoughts to match Supabase relation name from API
+  user_team_role: string | null; // User's role in this specific team
+}
+
 const AccountSettingsPage = () => {
   const { user, username, userRole, isLoading: authLoading, isLoggedIn, signOut } = useAuth();
   const router = useRouter();
@@ -21,6 +38,72 @@ const AccountSettingsPage = () => {
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
   const [teamCreationError, setTeamCreationError] = useState<string | null>(null);
   const [teamCreationSuccess, setTeamCreationSuccess] = useState<string | null>(null);
+
+  // State for Teams List
+  const [teams, setTeams] = useState<Team[]>([]); // Use the new Team interface
+  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
+  const [fetchTeamsError, setFetchTeamsError] = useState<string | null>(null);
+
+  // State for Stripe Checkout
+  const [isRedirectingToCheckout, setIsRedirectingToCheckout] = useState(false);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+
+  // Fetch teams function
+  const fetchTeams = async () => {
+    if (!user || !(userRole === 'pro' || userRole === 'enterprise')) {
+      setTeams([]);
+      return;
+    }
+    setIsLoadingTeams(true);
+    setFetchTeamsError(null);
+    try {
+      const response = await fetch('/api/teams');
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch teams');
+      }
+      const data = await response.json();
+      setTeams(data || []); // API returns array directly
+    } catch (error) {
+      setFetchTeamsError((error as Error).message);
+      setTeams([]);
+    } finally {
+      setIsLoadingTeams(false);
+    }
+  };
+
+  const handleUpgradeToProClick = async () => {
+    setIsRedirectingToCheckout(true);
+    setCheckoutError(null);
+    try {
+      const response = await fetch('/api/stripe/checkout-sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // Optionally, you could pass the specific price ID if you have multiple upgrade options
+        // body: JSON.stringify({ priceId: 'your_pro_price_id_here' }), 
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create checkout session.');
+      }
+
+      if (data.url) {
+        router.push(data.url); // Redirect to Stripe Checkout
+        // setIsRedirectingToCheckout will remain true until navigation away from page
+        return; 
+      } else {
+        throw new Error('No checkout URL received.');
+      }
+    } catch (error) {
+      console.error("Error redirecting to Stripe Checkout:", error);
+      setCheckoutError((error as Error).message);
+      setIsRedirectingToCheckout(false);
+    }
+  };
 
   // Placeholder actions (will be expanded)
   const handleCancelSubscription = async () => {
@@ -80,6 +163,7 @@ const AccountSettingsPage = () => {
       setTeamCreationSuccess(`Team '${result.team.name}' created successfully!`);
       setTeamName(''); // Clear input
       // TODO: Optionally, refresh a list of teams displayed on this page (e.g., by fetching teams again)
+      fetchTeams(); // Refresh teams list
     } catch (error) {
       setTeamCreationError((error as Error).message);
     } finally {
@@ -91,7 +175,10 @@ const AccountSettingsPage = () => {
     if (!authLoading && !isLoggedIn) {
       router.push('/login?message=Please+log+in+to+view+account+settings.');
     }
-  }, [authLoading, isLoggedIn, router]);
+    if (isLoggedIn && (userRole === 'pro' || userRole === 'enterprise')) {
+      fetchTeams();
+    }
+  }, [authLoading, isLoggedIn, router, userRole]); // Added userRole to dependency array
 
   if (authLoading || !isLoggedIn) {
     return (
@@ -151,12 +238,17 @@ const AccountSettingsPage = () => {
               
               <div className="flex flex-col sm:flex-row gap-3">
                 {(userRole === 'free' || userRole === 'pro') && (
-                  <Link
-                    href="/#pricing"
-                    className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                  <button
+                    onClick={userRole === 'free' ? handleUpgradeToProClick : () => router.push('/#pricing')}
+                    disabled={isRedirectingToCheckout}
+                    className="w-full sm:w-auto justify-center inline-flex items-center px-5 py-2.5 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-70"
                   >
-                    {userRole === 'free' ? 'Upgrade to Pro' : 'Change Plan'}
-                  </Link>
+                    {isRedirectingToCheckout && userRole === 'free' ? (
+                      <><Loader2 className="mr-2 h-5 w-5 animate-spin" />Processing...</>
+                    ) : (
+                      userRole === 'free' ? 'Upgrade to Pro' : 'Change Plan'
+                    )}
+                  </button>
                 )}
                 {(userRole === 'pro' || userRole === 'enterprise') && (
                   <button
@@ -179,6 +271,9 @@ const AccountSettingsPage = () => {
                 </Link>
               </div>
             </div>
+            {checkoutError && (
+              <p className="mt-2 text-sm text-red-600">{`Error: ${checkoutError}`}</p>
+            )}
           </section>
 
           {/* Team Management Section - Only for Pro and Enterprise users */}
@@ -188,6 +283,34 @@ const AccountSettingsPage = () => {
                 <Users className="mr-3 text-purple-600" size={28} /> Team Management
               </h2>
               {/* TODO: Display list of existing teams here */}
+              {isLoadingTeams && <p className="text-gray-600">Loading your teams...</p>}
+              {fetchTeamsError && <p className="text-sm text-red-600">Error loading teams: {fetchTeamsError}</p>}
+              {!isLoadingTeams && !fetchTeamsError && teams.length === 0 && (userRole === 'pro' || userRole === 'enterprise') && (
+                <p className="text-gray-600 mb-6">You are not part of any teams yet. Create one below!</p>
+              )}
+              {!isLoadingTeams && !fetchTeamsError && teams.length > 0 && (
+                <div className="mb-8 space-y-4">
+                  <h3 className="text-lg font-medium text-gray-800">Your Teams:</h3>
+                  <ul className="divide-y divide-gray-200 rounded-md border border-gray-200">
+                    {teams.map((team) => (
+                      <li key={team.id} className="p-4 hover:bg-gray-50">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-md font-semibold text-purple-700">{team.name}</p>
+                            <p className="text-sm text-gray-600">
+                              Your role: <span className="font-medium capitalize">{team.user_team_role || 'Member'}</span>
+                            </p>
+                          </div>
+                          <div className="text-right">
+                             <p className="text-sm text-gray-500">Owner: {team.users?.email || 'N/A'}</p>
+                             <p className="text-xs text-gray-400">Plan: <span className="capitalize">{team.plan}</span></p>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               <div className="mt-6">
                 <h3 className="text-lg font-medium text-gray-800 mb-3">Create New Team</h3>
                 <form onSubmit={handleCreateTeam} className="space-y-4">

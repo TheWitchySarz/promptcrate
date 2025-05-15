@@ -36,7 +36,7 @@ export default function RootLayout({
     <html lang="en">
       <body className="bg-purple-200 text-red-600 font-sans">
         <AuthProvider>
-          {children}
+        {children}
         </AuthProvider>
       </body>
     </html>
