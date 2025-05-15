@@ -490,9 +490,12 @@ export default function Home() {
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Dedicated support & SLA</li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Advanced security & compliance</li>
                 </ul>
-                <a href="mailto:sales@promptcrate.com?subject=Enterprise%20Plan%20Inquiry" className="w-full mt-auto px-6 py-3 rounded-lg bg-gray-800 text-white font-medium hover:bg-gray-900 transition text-center">
+                <Link 
+                  href="/contact?subject=Enterprise%20Inquiry" 
+                  className="w-full mt-auto px-6 py-3 rounded-lg bg-gray-800 text-white font-medium hover:bg-gray-900 transition text-center"
+                >
                   Contact Sales
-                </a>
+                </Link>
               </div>
             </div>
           </motion.div>
