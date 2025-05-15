@@ -36,21 +36,24 @@ export async function POST(request: NextRequest) {
     }
     const { user } = session;
 
-    const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    const proPriceId = process.env.STRIPE_PRO_MONTHLY_PRICE_ID;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
+    const proPriceId = process.env.STRIPE_PRO_MONTHLY_PRICE_ID || '';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || '';
 
-    if (!stripeSecretKey) {
-      console.error('Stripe Checkout: STRIPE_SECRET_KEY not set.');
-      return NextResponse.json({ error: 'Stripe secret key not configured.' }, { status: 500 });
-    }
-    if (!proPriceId) {
-      console.error('Stripe Checkout: STRIPE_PRO_MONTHLY_PRICE_ID not set.');
-      return NextResponse.json({ error: 'Pro plan Price ID not configured.' }, { status: 500 });
-    }
-    if (!appUrl) {
-      console.error('Stripe Checkout: NEXT_PUBLIC_APP_URL not set.');
-      return NextResponse.json({ error: 'Application URL not configured.' }, { status: 500 });
+    // Validate required environment variables
+    const missingVars = [];
+    if (!stripeSecretKey) missingVars.push('STRIPE_SECRET_KEY');
+    if (!proPriceId) missingVars.push('STRIPE_PRO_MONTHLY_PRICE_ID');
+    if (!appUrl) missingVars.push('NEXT_PUBLIC_APP_URL');
+
+    if (missingVars.length > 0) {
+      console.error(`Stripe Checkout: Missing required environment variables: ${missingVars.join(', ')}`);
+      return NextResponse.json({ 
+        error: missingVars.includes('STRIPE_PRO_MONTHLY_PRICE_ID') 
+          ? 'Pro plan Price ID not configured.' 
+          : 'Stripe configuration incomplete.', 
+        missingVars 
+      }, { status: 500 });
     }
 
     const stripe = new Stripe(stripeSecretKey, {
