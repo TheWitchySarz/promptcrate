@@ -5,7 +5,7 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client'; // Corrected path based on where we created it
 
 // Type for user plan, e.g., 'free', 'pro'. Could be extended.
-type UserPlan = string | null; 
+type UserPlan = 'free' | 'pro' | 'enterprise' | null; // Refined to specific plan strings
 
 interface AuthContextType {
   isLoading: boolean;
@@ -48,12 +48,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.error('Error fetching user profile:', error);
             setUserRole('free'); // Default to 'free' on error or if profile not found
             setUsername(null);
-          } else if (profile) {
-            setUserRole(profile.plan as UserPlan);
+          } else if (profile && profile.plan) {
+            setUserRole(profile.plan as UserPlan); // Cast to UserPlan
             setUsername(profile.username as string | null);
           } else {
-            console.warn('User profile not found, defaulting to free plan and null username.');
-            setUserRole('free'); // Default if profile somehow doesn't exist
+            console.warn('User profile not found or plan is missing, defaulting to free plan and null username.');
+            setUserRole('free'); // Default if profile somehow doesn't exist or plan is null
             setUsername(null);
           }
         } catch (e) {
