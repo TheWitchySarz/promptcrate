@@ -28,7 +28,9 @@ interface Team {
 
 // Helper component to use useSearchParams
 function AccountSettingsContent() {
-  const { user, username, userRole, isLoading: authLoading, isLoggedIn, signOut, refreshAuthStatus } = useAuth();
+  const auth = useAuth(); // Get the whole context object
+  const { user, username, userRole, isLoading: authLoading, isLoggedIn, signOut } = auth; // Destructure known properties
+  const refreshAuthStatus = (auth as any).refreshAuthStatus; // Access potentially missing property safely
   const router = useRouter();
   const searchParams = useSearchParams();
 

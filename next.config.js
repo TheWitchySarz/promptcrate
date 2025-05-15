@@ -4,8 +4,20 @@ const nextConfig = {
   images: {
     domains: ['avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
   },
-  experimental: {
-    serverActions: true,
+  async redirects() {
+    return [
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'promptcrate.ai',
+          },
+        ],
+        permanent: true,
+        destination: 'https://promptcrate.ai/:path*',
+      },
+    ];
   },
 };
 
