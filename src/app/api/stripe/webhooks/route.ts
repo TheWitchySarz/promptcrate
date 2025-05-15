@@ -2,17 +2,18 @@ import { type NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getServiceSupabase } from '@/lib/supabase'; // For service role access
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
+const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || '';
 
-if (!stripeSecretKey || !webhookSecret) {
-  throw new Error('Stripe secret key or webhook secret is not set in environment variables.');
-}
+// Instead of throwing an error at the module level (which breaks builds),
+// we'll check this in the route handler
+const missingCredentials = !stripeSecretKey || !webhookSecret;
 
-const stripe = new Stripe(stripeSecretKey, {
+// Only initialize Stripe if credentials exist
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
   apiVersion: '2023-10-16', // Match the version used in checkout session creation
   typescript: true,
-});
+}) : null;
 
 // Helper function to update user plan in Supabase
 async function updateUserSubscription(userId: string, plan: string, customerId: string, subscriptionId: string, subscriptionStatus: string) {
@@ -37,6 +38,16 @@ async function updateUserSubscription(userId: string, plan: string, customerId: 
 }
 
 export async function POST(request: NextRequest) {
+  // Check for missing credentials inside the handler instead of at module level
+  if (missingCredentials) {
+    console.error('Webhook Error: Stripe secret key or webhook secret is not set in environment variables.');
+    return NextResponse.json({ error: 'Stripe API not configured' }, { status: 500 });
+  }
+
+  if (!stripe) {
+    return NextResponse.json({ error: 'Stripe client not initialized' }, { status: 500 });
+  }
+
   const rawBody = await request.text();
   const signature = request.headers.get('stripe-signature');
 

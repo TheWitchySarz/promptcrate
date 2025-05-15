@@ -2,15 +2,14 @@ import { type NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { getServiceSupabase } from '@/lib/supabase'; // For service role access
 
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) {
-  throw new Error('Stripe secret key is not set in environment variables for finalize-pro-signup.');
-}
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
+const missingCredentials = !stripeSecretKey;
 
-const stripe = new Stripe(stripeSecretKey, {
+// Only initialize Stripe if credentials exist
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
   apiVersion: '2023-10-16',
   typescript: true,
-});
+}) : null;
 
 interface FinalizeProSignupBody {
   userId: string;
@@ -18,6 +17,16 @@ interface FinalizeProSignupBody {
 }
 
 export async function POST(request: NextRequest) {
+  // Check for missing credentials inside the handler
+  if (missingCredentials) {
+    console.error('Finalize Pro Signup: Stripe secret key is not set in environment variables.');
+    return NextResponse.json({ error: 'Stripe API not configured' }, { status: 500 });
+  }
+
+  if (!stripe) {
+    return NextResponse.json({ error: 'Stripe client not initialized' }, { status: 500 });
+  }
+
   let body: FinalizeProSignupBody;
   try {
     body = await request.json();

@@ -2,19 +2,26 @@ import { type NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 
 // Ensure Stripe secret key is available
-const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-if (!stripeSecretKey) {
-  console.error('Stripe Unauth Checkout: STRIPE_SECRET_KEY not set.');
-  // Depending on your error handling strategy, you might throw or handle differently
-  // For a serverless function, this might prevent it from deploying or running correctly
-}
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
+const missingCredentials = !stripeSecretKey;
 
-const stripe = new Stripe(stripeSecretKey!, {
+// Only initialize Stripe if credentials exist
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
   apiVersion: '2023-10-16', // Match other Stripe API versions used
   typescript: true,
-});
+}) : null;
 
 export async function POST(request: NextRequest) {
+  // Check for missing credentials inside the handler
+  if (missingCredentials) {
+    console.error('Stripe Unauth Checkout: STRIPE_SECRET_KEY not set.');
+    return NextResponse.json({ error: 'Stripe API not configured' }, { status: 500 });
+  }
+
+  if (!stripe) {
+    return NextResponse.json({ error: 'Stripe client not initialized' }, { status: 500 });
+  }
+
   const proPriceId = process.env.STRIPE_PRO_MONTHLY_PRICE_ID;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 

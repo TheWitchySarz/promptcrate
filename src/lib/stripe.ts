@@ -1,20 +1,23 @@
 import Stripe from 'stripe'
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing env.STRIPE_SECRET_KEY')
-}
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY || '';
+const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16',
-  typescript: true,
-})
+// Only initialize Stripe if secret key exists
+export const stripe = stripeSecretKey 
+  ? new Stripe(stripeSecretKey, {
+      apiVersion: '2023-10-16',
+      typescript: true,
+    })
+  : null;
 
 export const getStripe = () => {
-  if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
-    throw new Error('Missing env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY')
+  if (!stripePublishableKey) {
+    console.error('Missing env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY');
+    return { publishableKey: '', error: 'Missing Stripe publishable key' };
   }
   
   return {
-    publishableKey: process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+    publishableKey: stripePublishableKey,
   }
 } 
