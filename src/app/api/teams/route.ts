@@ -114,4 +114,83 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     return NextResponse.json({ error: 'An unexpected server error occurred', details: errorMessage }, { status: 500 });
   }
+}
+
+export async function GET(request: NextRequest) {
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name: string, options: CookieOptions) {
+          cookieStore.set({ name, value: '', ...options });
+        },
+      },
+    }
+  );
+
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError) {
+      return NextResponse.json({ error: 'Failed to get session', details: sessionError.message }, { status: 500 });
+    }
+    if (!session?.user) {
+      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
+    }
+
+    const { user } = session;
+
+    const { data: teamMemberships, error: membershipError } = await supabase
+      .from('team_users')
+      .select('team_id, role')
+      .eq('user_id', user.id);
+
+    if (membershipError) {
+      return NextResponse.json({ error: 'Failed to fetch user team memberships', details: membershipError.message }, { status: 500 });
+    }
+
+    if (!teamMemberships || teamMemberships.length === 0) {
+      return NextResponse.json([], { status: 200 }); 
+    }
+
+    const teamIds = teamMemberships.map(tm => tm.team_id);
+
+    const { data: teamsData, error: teamsError } = await supabase
+      .from('teams')
+      .select(`
+        id,
+        name,
+        created_at,
+        plan,
+        owner_id,
+        users ( id, email, username )
+      `)
+      .in('id', teamIds);
+
+    if (teamsError) {
+      return NextResponse.json({ error: 'Failed to fetch teams details', details: teamsError.message }, { status: 500 });
+    }
+    
+    const teamsWithUserRole = teamsData?.map(team => {
+        const membership = teamMemberships.find(tm => tm.team_id === team.id);
+        return {
+            ...team,
+            user_team_role: membership?.role || null 
+        };
+    }) || [];
+
+    return NextResponse.json(teamsWithUserRole, { status: 200 });
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    return NextResponse.json({ error: 'An unexpected server error occurred', details: errorMessage }, { status: 500 });
+  }
 } 
