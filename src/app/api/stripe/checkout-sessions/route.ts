@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       
       if (profileData?.stripe_customer_id) {
         stripeCustomerId = profileData.stripe_customer_id;
-        console.log(`Found existing Stripe customer ID: ${stripeCustomerId.substring(0, 5)}...`);
+        console.log(`Found existing Stripe customer ID: ${stripeCustomerId?.substring(0, 5) || stripeCustomerId}...`);
       } else {
         console.log('No existing Stripe customer ID found, will create new customer');
       }
