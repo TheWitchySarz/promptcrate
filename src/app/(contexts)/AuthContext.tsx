@@ -17,6 +17,7 @@ interface AuthContextType {
   signInWithEmail: (email: string, password: string) => Promise<any>;
   signInWithGoogle: () => Promise<any>;
   signOut: () => Promise<any>;
+  refreshAuthStatus: () => Promise<void>; // Add this method to the interface
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,48 +29,69 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userRole, setUserRole] = useState<UserPlan>(null); // Stores the user's plan
   const [username, setUsername] = useState<string | null>(null); // Added username state
 
-  useEffect(() => {
-    const fetchUserProfileAndSetState = async (currentUser: SupabaseUser | null) => {
-      // Ensure isLoading is true if we are about to fetch profile data
-      // This is important if this function is called directly or by an event
-      // and we need to show a loading state.
-      // However, the main setIsLoading(true) should be at the start of an auth flow.
-      // setIsLoading(true); // Consider if needed here or if callers handle it.
+  // Function to fetch user profile and update state
+  const fetchUserProfileAndSetState = async (currentUser: SupabaseUser | null) => {
+    // Ensure isLoading is true if we are about to fetch profile data
+    // This is important if this function is called directly or by an event
+    // and we need to show a loading state.
+    // However, the main setIsLoading(true) should be at the start of an auth flow.
+    // setIsLoading(true); // Consider if needed here or if callers handle it.
 
-      if (currentUser) {
-        try {
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('plan, username') // Fetch username along with plan
-            .eq('id', currentUser.id)
-            .single();
+    if (currentUser) {
+      try {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('plan, username') // Fetch username along with plan
+          .eq('id', currentUser.id)
+          .single();
 
-          if (error) {
-            console.error('Error fetching user profile:', error);
-            setUserRole('free'); // Default to 'free' on error or if profile not found
-            setUsername(null);
-          } else if (profile && profile.plan) {
-            setUserRole(profile.plan as UserPlan); // Cast to UserPlan
-            setUsername(profile.username as string | null);
-          } else {
-            console.warn('User profile not found or plan is missing, defaulting to free plan and null username.');
-            setUserRole('free'); // Default if profile somehow doesn't exist or plan is null
-            setUsername(null);
-          }
-        } catch (e) {
-          console.error('Exception fetching user profile:', e);
-          setUserRole('free');
+        if (error) {
+          console.error('Error fetching user profile:', error);
+          setUserRole('free'); // Default to 'free' on error or if profile not found
+          setUsername(null);
+        } else if (profile && profile.plan) {
+          setUserRole(profile.plan as UserPlan); // Cast to UserPlan
+          setUsername(profile.username as string | null);
+        } else {
+          console.warn('User profile not found or plan is missing, defaulting to free plan and null username.');
+          setUserRole('free'); // Default if profile somehow doesn't exist or plan is null
           setUsername(null);
         }
-      } else {
-        setUserRole(null);
+      } catch (e) {
+        console.error('Exception fetching user profile:', e);
+        setUserRole('free');
         setUsername(null);
       }
-      // This is the most reliable place to set isLoading to false,
-      // after user state and profile are processed.
-      setIsLoading(false); 
-    };
+    } else {
+      setUserRole(null);
+      setUsername(null);
+    }
+    // This is the most reliable place to set isLoading to false,
+    // after user state and profile are processed.
+    setIsLoading(false); 
+  };
 
+  // Add refreshAuthStatus function to allow refreshing profile data
+  const refreshAuthStatus = async () => {
+    console.log('Refreshing auth status...');
+    setIsLoading(true);
+    // Get the current session and user
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUser = session?.user ?? null;
+    
+    // If there's a user, fetch their updated profile information
+    if (currentUser) {
+      await fetchUserProfileAndSetState(currentUser);
+      console.log('Auth status refreshed.');
+    } else {
+      setUserRole(null);
+      setUsername(null);
+      setIsLoading(false);
+      console.log('No user found during refresh.');
+    }
+  };
+
+  useEffect(() => {
     const getSessionAndProfile = async () => {
       setIsLoading(true); // Start loading
       const { data: { session } } = await supabase.auth.getSession();
@@ -205,7 +227,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signUpWithEmail,
       signInWithEmail,
       signInWithGoogle,
-      signOut
+      signOut,
+      refreshAuthStatus
     }}>
       {children}
     </AuthContext.Provider>

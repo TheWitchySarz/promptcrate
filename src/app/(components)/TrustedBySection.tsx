@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { memo } from 'react';
 // import { Briefcase, Users, Star, TrendingUp } from 'lucide-react'; // Icons temporarily removed
 
 const trustedItems = [
@@ -26,6 +27,26 @@ const trustedItems = [
   }
 ];
 
+// Memoized TrustedItem to prevent unnecessary re-renders
+const TrustedItem = memo(({ item, index }: { item: typeof trustedItems[0], index: number }) => (
+  <motion.div 
+    key={item.name}
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    transition={{ duration: 0.3, delay: 0.1 * (index + 1) }} // Reduced animation time
+    className="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 ease-in-out"
+  >
+    <div className="mb-5 p-4 rounded-full bg-purple-100 flex items-center justify-center shadow w-16 h-16">
+      <svg className="w-8 h-8 text-purple-600" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 6.253v11.494m0 0A8.997 8.997 0 0012 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.335 0 .662-.02.985-.057m0 0a8.997 8.997 0 01-8.015-5.943"></path></svg>
+    </div>
+    <h3 className="text-xl font-semibold text-gray-800 mb-1">{item.name}</h3>
+    <p className="text-sm text-gray-500 leading-relaxed">{item.description}</p>
+  </motion.div>
+));
+
+TrustedItem.displayName = 'TrustedItem';
+
 const TrustedBySection = () => {
   return (
     <section className="bg-gray-50 py-16 sm:py-24">
@@ -33,7 +54,7 @@ const TrustedBySection = () => {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.1 }}
+        transition={{ duration: 0.4, delay: 0.1 }} // Reduced animation time
         className="max-w-7xl mx-auto px-6 lg:px-8"
       >
         <div className="text-center">
@@ -50,22 +71,7 @@ const TrustedBySection = () => {
         </div>
         <div className="mt-16 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 lg:grid-cols-4 text-center">
           {trustedItems.map((item, index) => (
-            <motion.div 
-              key={item.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.15 * (index + 1) }}
-              className="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 ease-in-out"
-            >
-              {/* Icon placeholder - to be re-added */}
-              <div className="mb-5 p-4 rounded-full bg-purple-100 flex items-center justify-center shadow w-16 h-16">
-                {/* item.icon would go here */}
-                <svg className="w-8 h-8 text-purple-600" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor"><path d="M12 6.253v11.494m0 0A8.997 8.997 0 0012 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.335 0 .662-.02.985-.057m0 0a8.997 8.997 0 01-8.015-5.943"></path></svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-1">{item.name}</h3>
-              <p className="text-sm text-gray-500 leading-relaxed">{item.description}</p>
-            </motion.div>
+            <TrustedItem key={item.name} item={item} index={index} />
           ))}
         </div>
       </motion.div>
@@ -73,4 +79,5 @@ const TrustedBySection = () => {
   );
 };
 
-export default TrustedBySection; 
+// Memoize the entire component
+export default memo(TrustedBySection); 

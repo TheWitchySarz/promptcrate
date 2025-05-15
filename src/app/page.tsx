@@ -1,21 +1,46 @@
 "use client";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import FeatureSection from "./(components)/FeatureSection";
 import { useState, useEffect } from 'react';
 import { CheckCircle, Mail, Loader2 } from 'lucide-react';
 import Navbar from './(components)/layout/Navbar';
 import Footer from './(components)/shared/Footer';
 import Link from 'next/link';
-import TrustedBySection from "./(components)/TrustedBySection";
 import { useAuth } from './(contexts)/AuthContext';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+// Dynamically import large components to improve initial load time
+const TrustedBySection = dynamic(() => import('./(components)/TrustedBySection'), {
+  loading: () => <div className="py-12 bg-white"><div className="max-w-7xl mx-auto px-6 text-center">Loading...</div></div>,
+  ssr: true
+});
+
+const FeatureSection = dynamic(() => import('./(components)/FeatureSection'), {
+  ssr: true
+});
 
 function UIMockupSection() {
   const [activeTab, setActiveTab] = useState("editor");
   const [isMockTesting, setIsMockTesting] = useState(false);
   const [mockOutputContent, setMockOutputContent] = useState('');
   const [showMockOutput, setShowMockOutput] = useState(false);
+
+  // Preload data to avoid layout shifts
+  const mockupData = {
+    editor: {
+      title: "My Awesome Prompt Title",
+      prompt: "Generate a marketing email campaign for a new {{product_name}} targeting {{target_audience}}.\\n\\nInclude:\\n- A catchy subject line.\\n- An engaging introduction.\\n- 3 key benefits of the {{product_name}}.\\n- A clear call to action to {{desired_action}}."
+    },
+    marketplace: {
+      prompts: [
+        { title: "SEO Blog Post Wizard", author: "AI Enthusiast", price: "$10", model: "ChatGPT-4" },
+        { title: "Twitter Thread Generator", author: "SocialNinja", price: "Free", model: "Claude 2" },
+        { title: "Code Explanation Pro", author: "DevGuru", price: "$15", model: "Gemini Pro" },
+        { title: "Landing Page Copywriter", author: "MarketingMaven", price: "$20", model: "ChatGPT-4" },
+      ]
+    }
+  };
 
   const handleMockTest = () => {
     setShowMockOutput(false); // Clear previous output first
@@ -41,16 +66,17 @@ function UIMockupSection() {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        transition={{ duration: 0.5, delay: 0.2 }}
+        transition={{ duration: 0.4, delay: 0.2 }}
       >
         <h2 className="text-3xl sm:text-4xl font-semibold mb-6 text-gray-900">See PromptCrate in Action</h2>
-        <p className="text-lg text-gray-600 mb-12 max-w-xl mx-auto">
+        <p className="text-lg text-gray-600 mb-10 max-w-xl mx-auto">
           Experience the intuitive interface of our prompt editor and the vibrant marketplace.
         </p>
-        <div className="flex justify-center gap-4 mb-10">
+        
+        <div className="flex justify-center gap-4 mb-8">
           <button
             onClick={() => setActiveTab("editor")}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors duration-200 ease-in-out 
+            className={`px-6 py-3 rounded-lg font-medium transition-colors duration-150 
                         ${activeTab === "editor" 
                           ? "bg-purple-600 text-white shadow-md"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
@@ -59,7 +85,7 @@ function UIMockupSection() {
           </button>
           <button
             onClick={() => setActiveTab("marketplace")}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors duration-200 ease-in-out 
+            className={`px-6 py-3 rounded-lg font-medium transition-colors duration-150 
                         ${activeTab === "marketplace" 
                           ? "bg-purple-600 text-white shadow-md"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
@@ -67,6 +93,7 @@ function UIMockupSection() {
             Marketplace View
           </button>
         </div>
+        
         <div className="relative w-full min-h-[500px] sm:min-h-[550px] md:min-h-[600px] bg-gray-800 rounded-xl border border-gray-700 shadow-2xl overflow-hidden p-4 flex flex-col">
           {/* Mockup Window Bar */}
           <div className="flex items-center gap-2 mb-3 flex-shrink-0">
@@ -252,16 +279,24 @@ export default function Home() {
     setIsUpgradingUser(true);
     setUpgradeUserError(null);
     try {
+      console.log('Creating checkout session for Pro upgrade...');
       const response = await fetch('/api/stripe/checkout-sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
+      
       const data = await response.json();
+      
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create checkout session for upgrade.');
       }
+      
       if (data.url) {
-        router.push(data.url);
+        console.log('Redirecting to Stripe checkout...');
+        // Important: We need to reset isUpgradingUser if the page is reloaded without completing checkout
+        // This is a safeguard to prevent the button being permanently disabled
+        setTimeout(() => setIsUpgradingUser(false), 30000); // Reset after 30 seconds
+        window.location.href = data.url; // Use window.location instead of router.push for more reliable redirect
         return;
       } else {
         throw new Error('No checkout URL received for upgrade.');
@@ -279,22 +314,24 @@ export default function Home() {
 
     setIsRedirectingDirect(true);
     setDirectCheckoutError(null);
-    // UI prompt for redirection can be handled by button text changing to "Redirecting..."
-    // If a more explicit message/modal is needed, it can be added here.
-    // For example: toast('Redirecting to secure checkout...');
-
     try {
+      console.log('Creating direct checkout session...');
       const response = await fetch('/api/stripe/unauth-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
+      
       const data = await response.json();
+      
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create direct checkout session.');
       }
+      
       if (data.url) {
-        router.push(data.url);
-        // setIsRedirectingDirect will remain true until navigation
+        console.log('Redirecting to direct checkout...');
+        // Safety timeout to reset the button state if page reloads without completing checkout
+        setTimeout(() => setIsRedirectingDirect(false), 30000);
+        window.location.href = data.url; // More reliable than router.push
         return; 
       } else {
         throw new Error('No direct checkout URL received.');
@@ -356,6 +393,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-4 items-center">
               <Link 
                 href="/signup" 
+                prefetch={true}
                 className="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-white bg-purple-600 rounded-lg shadow-md hover:bg-purple-700 transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
               >
                 Get Started for Free
@@ -402,7 +440,7 @@ export default function Home() {
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Basic editor features</li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Community access</li>
                 </ul>
-                <Link href="/signup?plan=free" className="w-full mt-auto px-6 py-3 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition text-center"> 
+                <Link href="/signup?plan=free" prefetch={true} className="w-full mt-auto px-6 py-3 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition text-center"> 
                   Get Started
                 </Link>
               </div>
@@ -452,7 +490,7 @@ export default function Home() {
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Dedicated support & SLA</li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Advanced security & compliance</li>
                 </ul>
-                <a href="/contact?plan=enterprise" className="w-full mt-auto px-6 py-3 rounded-lg bg-gray-800 text-white font-medium hover:bg-gray-900 transition text-center">
+                <a href="mailto:sales@promptcrate.com?subject=Enterprise%20Plan%20Inquiry" className="w-full mt-auto px-6 py-3 rounded-lg bg-gray-800 text-white font-medium hover:bg-gray-900 transition text-center">
                   Contact Sales
                 </a>
               </div>

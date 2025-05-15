@@ -1,0 +1,23 @@
+{
+  "name": "PromptCrate - AI Prompt Engineering Platform",
+  "short_name": "PromptCrate",
+  "description": "Create, refine, and monetize AI prompts on the ultimate platform for prompt engineers.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#9333ea",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+} 

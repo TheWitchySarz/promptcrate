@@ -18,23 +18,70 @@ const stripe = stripeSecretKey ? new Stripe(stripeSecretKey, {
 // Helper function to update user plan in Supabase
 async function updateUserSubscription(userId: string, plan: string, customerId: string, subscriptionId: string, subscriptionStatus: string) {
   const supabase = getServiceSupabase();
-  const { data, error } = await supabase
-    .from('users')
-    .update({
-      plan: plan,
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscriptionId,
-      subscription_status: subscriptionStatus, // e.g., 'active', 'cancelled', 'past_due'
-    })
-    .eq('id', userId)
-    .select(); // Optionally select to confirm or log
+  
+  console.log(`Webhook: Updating user ${userId} to plan ${plan}, status ${subscriptionStatus}`);
+  
+  try {
+    // First, check if user actually exists
+    const { data: existingUser, error: checkError } = await supabase
+      .from('users')
+      .select('id, plan, stripe_customer_id, stripe_subscription_id')
+      .eq('id', userId)
+      .maybeSingle();
+      
+    if (checkError) {
+      console.error(`Webhook: Error checking if user ${userId} exists:`, checkError);
+      throw checkError;
+    }
+    
+    if (!existingUser) {
+      console.log(`Webhook: User ${userId} doesn't exist in users table yet, will create`);
+      const { data: insertData, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          id: userId,
+          plan: plan,
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscriptionId,
+          subscription_status: subscriptionStatus
+        })
+        .select();
+        
+      if (insertError) {
+        console.error(`Webhook: Error creating user ${userId}:`, insertError);
+        throw insertError;
+      }
+      
+      console.log(`Webhook: Created new user ${userId} with plan ${plan}`);
+      return insertData;
+    }
+    
+    console.log(`Webhook: User ${userId} exists with current plan ${existingUser.plan}, updating to ${plan}`);
+    
+    // User exists, update them
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        plan: plan,
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscriptionId,
+        subscription_status: subscriptionStatus, // e.g., 'active', 'cancelled', 'past_due'
+      })
+      .eq('id', userId)
+      .select(); // Optionally select to confirm or log
 
-  if (error) {
-    console.error(`Webhook: Supabase error updating user ${userId} to plan ${plan}:`, error);
-    throw error; // Re-throw to be caught by the main handler if needed
+    if (error) {
+      console.error(`Webhook: Supabase error updating user ${userId} to plan ${plan}:`, error);
+      throw error; // Re-throw to be caught by the main handler if needed
+    }
+    
+    console.log(`Webhook: Successfully updated user ${userId} to plan ${plan}, stripe_customer_id: ${customerId}, stripe_subscription_id: ${subscriptionId}, status: ${subscriptionStatus}`);
+    
+    return data;
+  } catch (err) {
+    console.error(`Webhook: Error in updateUserSubscription:`, err);
+    throw err;
   }
-  console.log(`Webhook: User ${userId} updated to plan ${plan}, stripe_customer_id: ${customerId}, stripe_subscription_id: ${subscriptionId}, status: ${subscriptionStatus}`);
-  return data;
 }
 
 export async function POST(request: NextRequest) {
@@ -72,6 +119,13 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
         console.log('Webhook: Processing checkout.session.completed for session_id:', session.id);
+        console.log('Webhook: Session details:', JSON.stringify({
+          customer: session.customer,
+          subscription: session.subscription,
+          client_reference_id: session.client_reference_id,
+          payment_status: session.payment_status,
+          status: session.status
+        }));
 
         const userId = session.client_reference_id;
         const stripeCustomerId = session.customer as string;
@@ -83,8 +137,13 @@ export async function POST(request: NextRequest) {
         const newSubscriptionStatus = 'active'; // Or derive from subscription object if available
 
         if (userId && stripeCustomerId && stripeSubscriptionId) {
-          await updateUserSubscription(userId, planPurchased, stripeCustomerId, stripeSubscriptionId, newSubscriptionStatus);
-          console.log(`Webhook: Successfully processed checkout for user ${userId}, subscription ${stripeSubscriptionId}`);
+          try {
+            await updateUserSubscription(userId, planPurchased, stripeCustomerId, stripeSubscriptionId, newSubscriptionStatus);
+            console.log(`Webhook: Successfully processed checkout for user ${userId}, subscription ${stripeSubscriptionId}`);
+          } catch (updateError) {
+            console.error(`Webhook: Error updating user subscription:`, updateError);
+            // Don't rethrow - we've handled the error but want to return 200 to Stripe to avoid retries
+          }
         } else {
           console.error('Webhook Error: Missing userId, customerId, or subscriptionId in checkout.session.completed', {
             userId, stripeCustomerId, stripeSubscriptionId, sessionId: session.id

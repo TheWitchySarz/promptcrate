@@ -54,6 +54,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Stripe session not found.' }, { status: 404 });
     }
 
+    console.log(`Finalize Pro Signup: Session retrieved - payment_status: ${session.payment_status}, status: ${session.status}`);
+
     // Verify payment status
     if (session.payment_status !== 'paid') {
       console.warn(`Finalize Pro Signup: Stripe session ${stripeSessionId} not paid. Status: ${session.payment_status}`);
@@ -64,10 +66,13 @@ export async function POST(request: NextRequest) {
     const stripeSubscriptionId = typeof session.subscription === 'string' ? session.subscription : session.subscription?.id;
     const stripeSubscriptionStatus = typeof session.subscription === 'string' ? null : session.subscription?.status; // e.g., 'active'
     
+    console.log(`Finalize Pro Signup: Retrieved - customerId: ${stripeCustomerId}, subscriptionId: ${stripeSubscriptionId}, status: ${stripeSubscriptionStatus}`);
+
     // Fix TypeScript error by ensuring we only access email if session.customer is a Customer object (with email) not a DeletedCustomer
     let customerEmailFromStripe: string | null = null;
     if (typeof session.customer !== 'string' && session.customer && 'email' in session.customer) {
       customerEmailFromStripe = session.customer.email;
+      console.log(`Finalize Pro Signup: Customer email from Stripe: ${customerEmailFromStripe}`);
     }
 
     if (!stripeCustomerId || !stripeSubscriptionId) {
@@ -95,6 +100,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Database error fetching user profile.', details: fetchError.message }, { status: 500 });
     }
 
+    console.log(`Finalize Pro Signup: Existing user check - found: ${!!existingUser}, current plan: ${existingUser?.plan || 'none'}`);
+
     const updateData = {
       plan: 'pro',
       stripe_customer_id: stripeCustomerId,
@@ -104,6 +111,7 @@ export async function POST(request: NextRequest) {
     };
 
     if (existingUser) {
+      console.log(`Finalize Pro Signup: Updating user ${userId} to Pro plan.`);
       const { error: updateError } = await supabase
         .from('users')
         .update(updateData)
@@ -116,6 +124,7 @@ export async function POST(request: NextRequest) {
     } else {
       // If user profile doesn't exist in 'users' table yet, create it.
       // This assumes your 'users' table has an 'id' that is a FK to 'auth.users.id'.
+      console.log(`Finalize Pro Signup: Creating new user entry for ${userId} with Pro plan.`);
       const { error: insertError } = await supabase
         .from('users')
         .insert([{ id: userId, ...updateData }]);
@@ -126,7 +135,14 @@ export async function POST(request: NextRequest) {
       console.log(`Finalize Pro Signup: User ${userId} successfully created with Pro plan.`);
     }
 
-    return NextResponse.json({ message: 'User Pro plan finalized successfully.', plan: 'pro' }, { status: 200 });
+    return NextResponse.json({ 
+      message: 'User Pro plan finalized successfully.', 
+      plan: 'pro',
+      userId: userId,
+      stripeCustomerId: stripeCustomerId,
+      stripeSubscriptionId: stripeSubscriptionId,
+      stripeSubscriptionStatus: stripeSubscriptionStatus || 'active'
+    }, { status: 200 });
 
   } catch (error: any) {
     console.error('Finalize Pro Signup: Unexpected error:', error.message || error);
