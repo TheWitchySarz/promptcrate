@@ -77,9 +77,9 @@ const Navbar = () => {
           <>
             <li><Link href="/" className="text-gray-900 hover:text-purple-400 transition-colors">Home</Link></li>
             <li><Link href="/features" className="text-gray-900 hover:text-purple-400 transition-colors">Features</Link></li>
+            <li><Link href="/app/editor" className="text-gray-900 hover:text-purple-400 transition-colors">Prompt Editor</Link></li>
             <li><Link href="/marketplace" className="text-gray-900 hover:text-purple-400 transition-colors">Marketplace</Link></li>
             <li><Link href="/#pricing" className="text-gray-900 hover:text-purple-400 transition-colors">Pricing</Link></li>
-            <li><Link href="/app/editor" className="text-gray-900 hover:text-purple-400 transition-colors">Prompt Editor</Link></li>
           </>
         );
       case 'pro':

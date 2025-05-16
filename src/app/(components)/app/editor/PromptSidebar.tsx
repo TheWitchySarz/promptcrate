@@ -11,27 +11,31 @@ interface PromptSidebarProps {
   prompts: Prompt[]; // Use the full Prompt type
   onNewPrompt: () => void;
   onSelectPrompt: (promptId: string) => void;
-  activePromptId?: string | null;
-  onDeletePrompt: (promptId: string) => void; // Added prop
-  isLoading?: boolean; // Added prop
+  selectedPromptId?: string | null; // Updated from activePromptId
+  onDeletePrompt?: (promptId: string) => void; // Made optional
+  isLoading?: boolean;
+  className?: string; // Added for styling flexibility
 }
 
 const PromptSidebar: React.FC<PromptSidebarProps> = ({
   prompts,
   onNewPrompt,
   onSelectPrompt,
-  activePromptId,
+  selectedPromptId, // Updated from activePromptId
   onDeletePrompt,
-  isLoading,
+  isLoading = false,
+  className = '',
 }) => {
   // Handle delete button click
   const handleDeleteClick = (e: React.MouseEvent, promptId: string) => {
     e.stopPropagation(); // Prevent onSelectPrompt from firing
-    onDeletePrompt(promptId);
+    if (onDeletePrompt) {
+      onDeletePrompt(promptId);
+    }
   };
 
   return (
-    <aside className="w-64 md:w-72 bg-white border-r border-gray-200 flex flex-col h-full p-0">
+    <aside className={`bg-white border-r border-gray-200 flex flex-col h-full p-0 ${className}`}>
       {/* Header and New Prompt Button */}
       <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-800">My Prompts</h2>
@@ -58,20 +62,22 @@ const PromptSidebar: React.FC<PromptSidebarProps> = ({
                 onClick={() => onSelectPrompt(prompt.id)}
                 title={prompt.title}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md text-left transition-colors 
-                            ${activePromptId === prompt.id 
+                            ${selectedPromptId === prompt.id 
                               ? 'bg-purple-100 text-purple-700 font-medium' 
                               : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}`}
               >
-                <MessageSquareText size={16} className={`${activePromptId === prompt.id ? 'text-purple-600' : 'text-gray-400'}`} />
+                <MessageSquareText size={16} className={`${selectedPromptId === prompt.id ? 'text-purple-600' : 'text-gray-400'}`} />
                 <span className="truncate flex-grow">{prompt.title}</span>
-                <button 
-                  type="button" 
-                  onClick={(e) => handleDeleteClick(e, prompt.id)}
-                  title="Delete prompt"
-                  className="p-1 -mr-1 text-gray-400 hover:text-red-500 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                >
-                  <Trash2 size={16} />
-                </button>
+                {onDeletePrompt && (
+                  <button 
+                    type="button" 
+                    onClick={(e) => handleDeleteClick(e, prompt.id)}
+                    title="Delete prompt"
+                    className="p-1 -mr-1 text-gray-400 hover:text-red-500 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </button>
             </li>
           ))

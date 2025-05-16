@@ -65,11 +65,9 @@ function PromptEditorContent() {
     if (!authLoading) {
       if (!isLoggedIn) {
         router.push('/login?message=Please log in to access the Prompt Editor.');
-      } else if (userRole === 'free') {
-        router.push('/#pricing');
       }
     }
-  }, [isLoggedIn, userRole, authLoading, router]);
+  }, [isLoggedIn, authLoading, router]);
 
   // Effect to load prompt from query parameters (e.g., from marketplace)
   useEffect(() => {
@@ -92,7 +90,7 @@ function PromptEditorContent() {
 
   // Fetch user's prompts
   useEffect(() => {
-    if (isLoggedIn && user && userRole && userRole !== 'free') {
+    if (isLoggedIn && user && userRole) {
       const fetchPrompts = async () => {
         setIsLoadingPrompts(true);
         try {
@@ -224,22 +222,21 @@ function PromptEditorContent() {
     );
   }
 
-  if (!isLoggedIn || userRole === 'free') {
-    // This part is usually handled by the useEffect redirect, 
-    // but as a fallback or if redirect hasn't happened yet:
+  if (!isLoggedIn) {
+    // Show login message, but don't block free users
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white p-8">
         <Navbar />
         <div className="text-center">
           <h1 className="text-3xl font-bold text-red-500 mb-4">Access Denied</h1>
           <p className="text-lg mb-6">
-            {isLoggedIn ? "The Prompt Editor is available for Pro and Enterprise users. Please upgrade your plan." : "Please log in to access the Prompt Editor."}
+            Please log in to access the Prompt Editor.
           </p>
           <button 
-            onClick={() => router.push(isLoggedIn ? '/#pricing' : '/login')}
+            onClick={() => router.push('/login')}
             className="px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-md text-lg font-semibold transition-colors"
           >
-            {isLoggedIn ? "Upgrade to Pro" : "Login"}
+            Login
           </button>
         </div>
       </div>
@@ -248,34 +245,52 @@ function PromptEditorContent() {
 
   // Main Editor UI - Simplified layout
   return (
-    <div className="min-h-screen flex flex-col bg-gray-900 text-white">
-      <Suspense fallback={<div>Loading search params...</div>}>
-        <SearchParamsHandler onParams={setSearchParams} />
-      </Suspense>
+    <main className="min-h-screen bg-gray-900 pb-12">
       <Navbar />
-      <div className="flex-grow flex flex-row overflow-hidden h-[calc(100vh-var(--navbar-height,4rem))]">
-        <PromptSidebar 
-          prompts={promptsList}
-          onNewPrompt={handleNewPrompt}
-          onSelectPrompt={handleSelectPrompt}
-          activePromptId={currentPrompt?.id === null ? null : currentPrompt?.id || null}
-          onDeletePrompt={handleDeletePrompt}
-          isLoading={isLoadingPrompts}
-        />
-        {/* Main content area now primarily for PromptBuilder */}
-        <main className="flex-grow flex flex-col p-4 md:p-6 overflow-y-auto custom-scrollbar">
-          {/* PromptBuilder will take up the main space in this column */}
-          <div className="flex-grow flex flex-col h-full">
-             <PromptBuilder
-                promptData={currentPrompt}
-                onPromptDataChange={setCurrentPrompt}
-                onSavePrompt={handleSavePrompt}
-                isSaving={isSaving}
-              />
+      <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 max-w-screen-xl">
+        {userRole === 'free' && (
+          <div className="mb-6 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl p-4 shadow-lg text-white">
+            <div className="flex flex-col sm:flex-row items-center justify-between">
+              <div className="mb-4 sm:mb-0">
+                <h3 className="text-lg font-bold">You're using the free version of PromptCrate</h3>
+                <p className="text-sm text-purple-100">Upgrade to Pro to unlock AI refinement, advanced tools, and more!</p>
+              </div>
+              <button 
+                onClick={() => router.push('/#pricing')}
+                className="px-6 py-2 bg-white text-purple-700 rounded-md font-semibold text-sm shadow-sm hover:bg-purple-50 transition-colors"
+              >
+                Upgrade to Pro
+              </button>
+            </div>
           </div>
-        </main>
+        )}
+        <div className="flex flex-col xl:flex-row gap-6 min-h-[calc(100vh-200px)]">
+          {/* Sidebar with prompts list */}
+          <aside className="w-full xl:w-1/4 bg-gray-800 rounded-xl shadow-lg border border-gray-700 overflow-hidden flex flex-col">
+            <PromptSidebar 
+              prompts={promptsList} 
+              selectedPromptId={currentPrompt?.id || null} 
+              onSelectPrompt={handleSelectPrompt}
+              onNewPrompt={handleNewPrompt}
+              onDeletePrompt={handleDeletePrompt}
+              isLoading={isLoadingPrompts}
+              className="flex-grow"
+            />
+          </aside>
+
+          {/* Main editor area */}
+          <div className="w-full xl:w-3/4 flex-grow">
+            <PromptBuilder 
+              promptData={currentPrompt}
+              onPromptDataChange={setCurrentPrompt}
+              onSavePrompt={handleSavePrompt}
+              isSaving={isSaving}
+              userRole={userRole || 'free'} 
+            />
+          </div>
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
 

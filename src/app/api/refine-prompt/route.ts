@@ -1,6 +1,8 @@
 import { streamText } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
+import { createServerClient } from '@supabase/ssr';
 
 // Optional: Set the runtime to edge for best performance
 export const runtime = 'edge';
@@ -16,6 +18,63 @@ const openai = createOpenAI({
 export async function POST(req: NextRequest) {
   console.log('Refine API route hit (AI SDK streamText)');
   try {
+    // Create Supabase client for authentication check
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options });
+          },
+          remove(name: string, options: any) {
+            cookieStore.set({ name, value: '', ...options });
+          },
+        },
+      }
+    );
+
+    // Verify user is authenticated
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      return new Response(JSON.stringify({ error: 'Authentication required' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Check if user has a premium subscription
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('plan')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError);
+      return new Response(JSON.stringify({ error: 'Error verifying subscription status' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const userPlan = profile?.plan || 'free';
+    const isPremiumUser = userPlan === 'pro' || userPlan === 'enterprise';
+
+    if (!isPremiumUser) {
+      console.log('Free user attempted to use AI feature');
+      return new Response(JSON.stringify({ error: 'This feature requires a premium subscription' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     const body = await req.json();
     const { prompt: userPrompt, model: modelId } = body; // Renamed prompt to userPrompt to avoid conflict with streamText's prompt arg
     console.log('Received for refinement (AI SDK streamText):', { userPrompt, modelId });

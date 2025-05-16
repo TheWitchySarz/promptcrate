@@ -20,6 +20,7 @@ interface PromptBuilderProps {
   onPromptDataChange: (updatedData: EditablePromptData) => void;
   onSavePrompt: () => void; // No longer takes arguments
   isSaving?: boolean;
+  userRole?: string; // Add userRole prop to check if user is free or premium
   // isNewPrompt is now derived from !promptData?.id
 }
 
@@ -28,6 +29,7 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
   onPromptDataChange,
   onSavePrompt,
   isSaving,
+  userRole = 'free', // Default to free if not provided
 }) => {
   const editorModels: ModelOption[] = availableEditorModelsConstant.filter(m => m.id !== 'all');
   const [isRefining, setIsRefining] = useState(false);
@@ -46,6 +48,8 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
 
   const { title, prompt_content, model } = promptData;
   const isNewPrompt = promptData.id === null;
+
+  const isPremiumUser = userRole === 'pro' || userRole === 'enterprise';
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -73,6 +77,11 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
   };
 
   const handleRefineWithAI = async () => {
+    if (!isPremiumUser) {
+      setRefineError("AI refinement is a premium feature. Please upgrade to Pro.");
+      return;
+    }
+
     if (!prompt_content || !prompt_content.trim()) {
       setRefineError("Please enter some prompt text to refine.");
       return;
@@ -171,15 +180,20 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
         <button
             type="button"
             onClick={handleRefineWithAI}
-            disabled={isRefining || isSaving || !prompt_content || !prompt_content.trim()}
-            className="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-60 disabled:cursor-not-allowed flex items-center whitespace-nowrap"
-          >
+            disabled={isRefining || isSaving || !prompt_content || !prompt_content.trim() || !isPremiumUser}
+            className="relative px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-60 disabled:cursor-not-allowed flex items-center whitespace-nowrap group"
+        >
             {isRefining ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Brain className="mr-2 h-4 w-4" />
             )}
             Refine with AI
+            {!isPremiumUser && (
+              <span className="absolute -top-2 -right-2 bg-yellow-500 text-xs px-1.5 py-0.5 rounded-full text-gray-900 font-bold">
+                PRO
+              </span>
+            )}
         </button>
         <div className="flex gap-2 w-full sm:w-auto">
           <button 

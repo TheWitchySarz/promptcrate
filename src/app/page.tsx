@@ -2,7 +2,7 @@
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useState, useEffect } from 'react';
-import { CheckCircle, Mail, Loader2 } from 'lucide-react';
+import { CheckCircle, Mail, Loader2, XCircle } from 'lucide-react';
 import Navbar from './(components)/layout/Navbar';
 import Footer from './(components)/shared/Footer';
 import Link from 'next/link';
@@ -436,9 +436,11 @@ export default function Home() {
                   $0 <span className="text-xl font-normal text-gray-500">/ month</span>
                 </p>
                 <ul className="space-y-3 text-gray-600 mt-6 mb-8 flex-grow">
-                  <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Limited prompt library</li>
-                  <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Basic editor features</li>
-                  <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Community access</li>
+                  <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Access to prompt editor</li>
+                  <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Save prompts to your library</li>
+                  <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Community marketplace access</li>
+                  <li className="flex items-center"><XCircle className="text-red-400 mr-2 flex-shrink-0" size={18}/> <span className="text-gray-400">AI refinement features</span></li>
+                  <li className="flex items-center"><XCircle className="text-red-400 mr-2 flex-shrink-0" size={18}/> <span className="text-gray-400">Team collaboration</span></li>
                 </ul>
                 <Link href="/signup?plan=free" prefetch={true} className="w-full mt-auto px-6 py-3 rounded-lg bg-gray-100 text-gray-700 font-medium hover:bg-gray-200 transition text-center"> 
                   Get Started
@@ -457,7 +459,7 @@ export default function Home() {
                 </p>
                 <ul className="space-y-3 text-gray-600 mt-6 mb-8 flex-grow">
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Unlimited personal prompts</li>
-                  <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Advanced editor & AI Refinement</li>
+                  <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> <strong>AI refinement & optimization</strong></li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Create team libraries (up to 5 users)</li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Sell on Marketplace (20% commission)</li>
                   <li className="flex items-center"><CheckCircle className="text-green-500 mr-2 flex-shrink-0" size={18}/> Priority support</li>
