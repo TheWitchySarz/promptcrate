@@ -4,7 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import Navbar from '../(components)/layout/Navbar';
 import Footer from '../(components)/shared/Footer';
-import { Mail, Lock, Github, LogIn as GoogleIcon } from 'lucide-react';
+import { Mail, Lock, LogIn as GoogleIcon } from 'lucide-react';
 import { useAuth } from '../(contexts)/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -112,14 +112,6 @@ function LoginContent() {
             >
               <GoogleIcon size={20} className="mr-2 text-red-500" /> 
               Log in with Google
-            </button>
-            <button
-              onClick={() => handleOAuthLogin('github')}
-              disabled={loading}
-              className="w-full flex items-center justify-center px-4 py-2.5 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
-            >
-              <Github size={20} className="mr-2 text-gray-800" />
-              Log in with GitHub
             </button>
           </div>
 
