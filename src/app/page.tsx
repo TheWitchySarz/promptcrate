@@ -45,7 +45,7 @@ function UIMockupSection() {
   const handleMockTest = () => {
     setShowMockOutput(false); // Clear previous output first
     setIsMockTesting(true);
-    
+
     // Simulate API call and AI generation
     setTimeout(() => {
       const productName = "NovaWidget";
@@ -53,7 +53,7 @@ function UIMockupSection() {
       const desiredAction = "Learn More & Pre-order";
 
       const generatedEmail = `Subject: ✨ Introducing the Revolutionary ${productName} for ${targetAudience}! ✨\n\nHi there,\n\nAre you ready to elevate your experience? We're thrilled to unveil the all-new ${productName}, designed specifically for innovative ${targetAudience} like you!\n\nDiscover how ${productName} can help you:\n1. **Boost Productivity:** Streamline your workflow and achieve more in less time.\n2. **Enhance Quality:** Deliver outstanding results with our cutting-edge features.\n3. **Unlock Potential:** Gain new insights and capabilities to stay ahead of the curve.\n\nReady to ${desiredAction}? Click here to get started: [Your Call to Action Link Here]\n\nBest,\nThe PromptCrate Team`;
-      
+
       setMockOutputContent(generatedEmail);
       setIsMockTesting(false);
       setShowMockOutput(true);
@@ -72,7 +72,7 @@ function UIMockupSection() {
         <p className="text-lg text-gray-600 mb-10 max-w-xl mx-auto">
           Experience the intuitive interface of our prompt editor and the vibrant marketplace.
         </p>
-        
+
         <div className="flex justify-center gap-4 mb-8">
           <button
             onClick={() => setActiveTab("editor")}
@@ -93,7 +93,7 @@ function UIMockupSection() {
             Marketplace View
           </button>
         </div>
-        
+
         <div className="relative w-full min-h-[500px] sm:min-h-[550px] md:min-h-[600px] bg-gray-800 rounded-xl border border-gray-700 shadow-2xl overflow-hidden p-4 flex flex-col">
           {/* Mockup Window Bar */}
           <div className="flex items-center gap-2 mb-3 flex-shrink-0">
@@ -129,7 +129,7 @@ function UIMockupSection() {
               {/* Editor Footer/Actions */}
               <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-4">
                 <Link
-                  href="/#pricing"
+                  href="/signup"
                   className="px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors text-center w-full sm:w-auto"
                 >
                   Save Draft
@@ -188,7 +188,7 @@ function UIMockupSection() {
                     <p className="text-xs text-gray-400 mb-2">Model: <span className="font-medium text-gray-600">{prompt.model}</span></p>
                     <p className="text-lg font-bold text-gray-800 mb-3">{prompt.price}</p>
                     <Link 
-                      href="/#pricing"
+                      href="/signup"
                       className="mt-auto w-full px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors text-center"
                     >
                       View Prompt
@@ -263,7 +263,7 @@ function WhyPromptCrateSection() {
 export default function Home() {
   const { isLoggedIn, userRole, isLoading: isAuthLoading } = useAuth();
   const router = useRouter();
-  
+
   // State for logged-in user upgrade flow
   const [isUpgradingUser, setIsUpgradingUser] = useState(false);
   const [upgradeUserError, setUpgradeUserError] = useState<string | null>(null);
@@ -284,13 +284,13 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create checkout session for upgrade.');
       }
-      
+
       if (data.url) {
         console.log('Redirecting to Stripe checkout...');
         // Important: We need to reset isUpgradingUser if the page is reloaded without completing checkout
@@ -320,13 +320,13 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create direct checkout session.');
       }
-      
+
       if (data.url) {
         console.log('Redirecting to direct checkout...');
         // Safety timeout to reset the button state if page reloads without completing checkout
