@@ -133,46 +133,7 @@ const Navbar = () => {
       </>
     );
 
-    // Mobile links (can be combined with desktop or handled separately in mobile menu)
-    const MobileNavLinks = () => {
-      const homeHref = isLoggedIn ? "/home" : "/";
-      
-      return (
-        <>
-          <Link href={homeHref} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</Link>
-          <Link href="/features" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Features</Link>
-          <Link 
-            href="/app/editor" 
-            className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-            onClick={(e) => handleProtectedRoute('/app/editor', e)}
-          >
-            Prompt Editor
-          </Link>
-          <Link 
-            href="/marketplace" 
-            className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
-            onClick={(e) => handleProtectedRoute('/marketplace', e)}
-          >
-            Marketplace
-          </Link>
-          <Link href="/#pricing" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Pricing</Link>
-          {isLoggedIn && userRole === 'pro' && (
-            <>
-              <Link href="/app/my-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">My Library</Link>
-              <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
-            </>
-          )}
-          {isLoggedIn && userRole === 'enterprise' && (
-            <>
-              <Link href="/app/team-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Team Library</Link>
-              <Link href="/app/analytics" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Analytics</Link>
-              <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
-              <Link href="/admin/console" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Admin Console</Link>
-            </>
-          )}
-        </>
-      );
-    };
+    
 
     return (
       <div className="py-1 rounded-md bg-white shadow-xs ring-1 ring-black ring-opacity-5">
@@ -187,6 +148,47 @@ const Navbar = () => {
         {/* For now, keeping commonLinks for account actions */} 
         {commonLinks}
       </div>
+    );
+  };
+
+  // Mobile links (can be combined with desktop or handled separately in mobile menu)
+  const MobileNavLinks = () => {
+    const homeHref = isLoggedIn ? "/home" : "/";
+    
+    return (
+      <>
+        <Link href={homeHref} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</Link>
+        <Link href="/features" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Features</Link>
+        <Link 
+          href="/app/editor" 
+          className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+          onClick={(e) => handleProtectedRoute('/app/editor', e)}
+        >
+          Prompt Editor
+        </Link>
+        <Link 
+          href="/marketplace" 
+          className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+          onClick={(e) => handleProtectedRoute('/marketplace', e)}
+        >
+          Marketplace
+        </Link>
+        <Link href="/#pricing" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Pricing</Link>
+        {isLoggedIn && userRole === 'pro' && (
+          <>
+            <Link href="/app/my-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">My Library</Link>
+            <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
+          </>
+        )}
+        {isLoggedIn && userRole === 'enterprise' && (
+          <>
+            <Link href="/app/team-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Team Library</Link>
+            <Link href="/app/analytics" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Analytics</Link>
+            <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
+            <Link href="/admin/console" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Admin Console</Link>
+          </>
+        )}
+      </>
     );
   };
 
