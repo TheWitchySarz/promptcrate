@@ -2,22 +2,13 @@
 
 import React from 'react';
 import { FilePlus2, History, MessageSquareText, Trash2, Loader2 } from 'lucide-react'; // Updated icons
-import type { Prompt } from '@/app/app/editor/page'; // Adjusted import path using @ alias
+import type { Prompt as PromptType } from '@/app/app/editor/page'; // Adjusted import path using @ alias
 
 // Mock data for prompts - will be removed or replaced by props
 // const mockUserPrompts = []; // Example of empty state
 
-interface Prompt {
-  id: string;
-  title: string;
-  content: string;
-  model: string;
-  created_at: string;
-  category?: string;
-}
-
 interface PromptSidebarProps {
-  prompts: Prompt[]; // Use the full Prompt type
+  prompts: PromptType[]; // Use the imported Prompt type
   onNewPrompt: () => void;
   onSelectPrompt: (promptId: string) => void;
   selectedPromptId?: string | null; // Updated from activePromptId
