@@ -71,7 +71,11 @@ const PromptSidebar: React.FC<PromptSidebarProps> = ({
                 {onDeletePrompt && (
                   <button 
                     type="button" 
-                    onClick={(e) => prompt.id && handleDeleteClick(e, prompt.id)}
+                    onClick={(e) => {
+                      if (prompt.id) {
+                        handleDeleteClick(e, prompt.id);
+                      }
+                    }}
                     title="Delete prompt"
                     className="p-1 -mr-1 text-gray-400 hover:text-red-500 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   >
