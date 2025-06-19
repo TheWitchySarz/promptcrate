@@ -99,9 +99,24 @@ export async function POST(req: NextRequest) {
     console.log('Using model (AI SDK streamText):', selectedModel);
     console.log('Constructing instruction for OpenAI (AI SDK streamText)');
 
-    const systemInstruction = `You are an expert prompt engineer. Refine the following prompt to be more effective, clear, and concise.
-The user is trying to use it with the ${selectedModel} model.
-Do not add any preamble or explanation, just provide the refined prompt.`;
+    const systemInstruction = `You are an expert prompt engineer with deep knowledge of ${selectedModel}. 
+
+Your task: Transform the user's prompt to be significantly more effective by:
+
+1. Adding specific instructions for clarity
+2. Including relevant context and constraints  
+3. Optimizing for ${selectedModel}'s strengths
+4. Adding structured output formatting when beneficial
+5. Including examples if they would improve results
+
+Guidelines:
+- Preserve the user's core intent
+- Make concrete improvements, not just cosmetic changes
+- Add specific details that will improve AI output quality
+- Use proven prompt engineering techniques (chain-of-thought, few-shot examples, role specification)
+- Structure the prompt for better parsing by ${selectedModel}
+
+Return only the refined prompt with no explanatory text.`;
 
     console.log('Calling OpenAI API via streamText (AI SDK)...');
 

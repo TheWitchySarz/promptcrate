@@ -86,40 +86,64 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
       setRefineError("Please enter some prompt text to refine.");
       return;
     }
+
+    // Store original content for potential restoration
+    const originalContent = prompt_content;
+    
     setIsRefining(true);
     setRefineError(null);
-    handlePromptContentChange(''); // Clear existing prompt content
+    handlePromptContentChange('🔄 Analyzing and refining your prompt...'); // Show progress
 
     try {
       const response = await fetch('/api/refine-prompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: prompt_content, model: model }), // Use model from promptData
+        body: JSON.stringify({ prompt: originalContent, model: model }),
       });
 
       if (!response.ok) {
         let errorData = { error: `API request failed with status ${response.status}` };
-        try { errorData = await response.json(); } catch (parseError) { /* ignore */ }
-        throw new Error(errorData.error || `API request failed with status ${response.status}`);
+        try { 
+          errorData = await response.json(); 
+        } catch (parseError) { 
+          // ignore parsing errors for non-JSON responses
+        }
+        throw new Error(errorData.error || `Refinement failed with status ${response.status}`);
       }
-      if (!response.body) throw new Error("Response body is null.");
+
+      if (!response.body) {
+        throw new Error("No response received from AI service.");
+      }
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let accumulatedResponse = "";
-      // eslint-disable-next-line no-constant-condition
+      let refinedContent = "";
+      
+      // Clear the progress message
+      handlePromptContentChange('');
+      
+      // Stream the refined content
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        
         const chunk = decoder.decode(value, { stream: true });
-        accumulatedResponse += chunk;
-        handlePromptContentChange(accumulatedResponse); // Update UI incrementally
+        refinedContent += chunk;
+        handlePromptContentChange(refinedContent);
       }
+
+      // Validate that we got substantial improvements
+      if (refinedContent.trim().length < originalContent.length * 0.8) {
+        throw new Error("Refinement did not produce substantial improvements. Please try again.");
+      }
+
     } catch (error) {
       console.error("Error refining prompt:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during refinement.";
-      setRefineError(errorMessage);
-      // Optionally restore original prompt_content here if refinement fails significantly
+      setRefineError(`Refinement failed: ${errorMessage}`);
+      
+      // Restore original content on error
+      handlePromptContentChange(originalContent);
     } finally {
       setIsRefining(false);
     }
