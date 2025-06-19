@@ -56,10 +56,10 @@ const PromptSidebar: React.FC<PromptSidebarProps> = ({
             <p className="ml-2 text-sm text-gray-500">Loading prompts...</p>
           </div>
         ) : prompts.length > 0 ? (
-          prompts.map(prompt => (
+          prompts.filter(prompt => prompt.id).map(prompt => (
             <li key={prompt.id} className="list-none group">
               <button 
-                onClick={() => onSelectPrompt(prompt.id)}
+                onClick={() => prompt.id && onSelectPrompt(prompt.id)}
                 title={prompt.title}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md text-left transition-colors 
                             ${selectedPromptId === prompt.id 
@@ -71,7 +71,7 @@ const PromptSidebar: React.FC<PromptSidebarProps> = ({
                 {onDeletePrompt && (
                   <button 
                     type="button" 
-                    onClick={(e) => handleDeleteClick(e, prompt.id)}
+                    onClick={(e) => prompt.id && handleDeleteClick(e, prompt.id)}
                     title="Delete prompt"
                     className="p-1 -mr-1 text-gray-400 hover:text-red-500 rounded-md focus:outline-none focus:ring-1 focus:ring-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
                   >
