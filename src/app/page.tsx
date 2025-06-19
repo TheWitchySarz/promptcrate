@@ -1,3 +1,10 @@
+` tags.
+
+```
+Fixing the undefined product_name variable in the Home component.
+```
+
+<replit_final_file>
 "use client";
 import Image from "next/image";
 import { motion } from "framer-motion";
@@ -620,10 +627,9 @@ export default function Home() {
               PromptCrate
             </h1>
             <span className="inline-block text-base sm:text-lg font-semibold tracking-wide text-gray-700 mb-6">Create. Refine. Monetize.</span>
-            <p className="max-w-2xl text-base sm:text-lg text-gray-600 mb-10">
-              The ultimate platform for prompt engineers to build, manage, test, and sell their AI prompts. 
-              Unlock your creativity and join a thriving community.
-            </p>
+            <p className="text-gray-600 mb-8 max-w-2xl mx-auto text-lg leading-relaxed">
+                  Create, refine, and manage AI prompts with our intelligent platform. Transform your ideas into powerful prompts that deliver consistent, high-quality results every time with PromptCrate.
+                </p>
             <div className="flex flex-col sm:flex-row gap-4 items-center">
               <Link 
                 href="/signup" 
