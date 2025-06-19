@@ -7,6 +7,15 @@ import type { Prompt } from '@/app/app/editor/page'; // Adjusted import path usi
 // Mock data for prompts - will be removed or replaced by props
 // const mockUserPrompts = []; // Example of empty state
 
+interface Prompt {
+  id: string;
+  title: string;
+  content: string;
+  model: string;
+  created_at: string;
+  category?: string;
+}
+
 interface PromptSidebarProps {
   prompts: Prompt[]; // Use the full Prompt type
   onNewPrompt: () => void;
@@ -59,10 +68,14 @@ const PromptSidebar: React.FC<PromptSidebarProps> = ({
           prompts.filter(prompt => prompt.id).map(prompt => (
             <li key={prompt.id} className="list-none group">
               <button 
-                onClick={() => prompt.id && onSelectPrompt(prompt.id)}
+                onClick={() => {
+                  if (prompt.id) {
+                    onSelectPrompt(prompt.id);
+                  }
+                }}
                 title={prompt.title}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-sm rounded-md text-left transition-colors 
-                            ${selectedPromptId === prompt.id 
+                            ${selectedPromptId === prompt.id && prompt.id
                               ? 'bg-purple-100 text-purple-700 font-medium' 
                               : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'}`}
               >
@@ -93,7 +106,7 @@ const PromptSidebar: React.FC<PromptSidebarProps> = ({
           </div>
         )}
       </div>
-      
+
       {/* Future: Toggle for Personal/Team Library can go here or in header */}
       {/* <div className="p-3 border-t border-gray-200">
         <p className="text-xs text-gray-400">Future: Library Toggle</p>
@@ -102,4 +115,4 @@ const PromptSidebar: React.FC<PromptSidebarProps> = ({
   );
 }
 
-export default PromptSidebar; 
+export default PromptSidebar;

@@ -57,7 +57,8 @@ const FEATURED_PROMPTS: MarketplacePrompt[] = [
     featured: true,
     trending: true,
     verified: true,
-    preview: 'Create compelling, search-engine optimized content that ranks on the first page...'
+    preview: 'Create compelling, search-engine optimized content that ranks on the first page...',
+    source: 'marketplace'
   },
   {
     id: '2',
@@ -77,7 +78,8 @@ const FEATURED_PROMPTS: MarketplacePrompt[] = [
     lastUpdated: '2024-01-18',
     featured: true,
     trending: false,
-    verified: true
+    verified: true,
+    source: 'marketplace'
   },
   {
     id: '3',
@@ -97,7 +99,8 @@ const FEATURED_PROMPTS: MarketplacePrompt[] = [
     lastUpdated: '2024-01-20',
     featured: true,
     trending: true,
-    verified: false
+    verified: false,
+    source: 'community'
   }
 ];
 

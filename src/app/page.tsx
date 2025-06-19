@@ -372,7 +372,7 @@ Include:
                           📈
                         </div>
                       )}
-                      
+
                       {/* Header */}
                       <div className="flex items-center space-x-1 mb-2">
                         <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs">
@@ -388,8 +388,10 @@ Include:
                       </div>
 
                       {/* Content */}
-                      <h4 className="text-xs font-bold text-gray-900 mb-1 line-clamp-2 leading-tight">{prompt.title}</h4>
-                      
+                      <h3 className="text-lg font-bold text-gray-900 group-hover:text-purple-600 transition-colors">
+                          {prompt.title}
+                        </h3>
+
                       {/* Tags */}
                       <div className="flex gap-1 mb-2">
                         <span className="bg-gray-100 text-gray-700 px-1 rounded text-xs">SEO</span>
@@ -424,7 +426,7 @@ Include:
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="text-center mt-3">
                   <button className="text-xs text-purple-600 font-medium">View All Prompts →</button>
                 </div>
