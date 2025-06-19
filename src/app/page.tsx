@@ -194,13 +194,13 @@ Include:
                     <div className="space-y-1">
                       <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
                         <div className="flex items-center space-x-2">
-                          <code className="bg-purple-100 text-purple-700 px-1 rounded">{{product_name}}</code>
+                          <code className="bg-purple-100 text-purple-700 px-1 rounded">{'{{product_name}}'}</code>
                           <span className="text-gray-600">Product name</span>
                         </div>
                       </div>
                       <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
                         <div className="flex items-center space-x-2">
-                          <code className="bg-purple-100 text-purple-700 px-1 rounded">{{target_audience}}</code>
+                          <code className="bg-purple-100 text-purple-700 px-1 rounded">{'{{target_audience}}'}</code>
                           <span className="text-gray-600">Target audience</span>
                         </div>
                       </div>
