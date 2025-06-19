@@ -46,7 +46,7 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
     );
   }
 
-  const { title, prompt_content, model } = promptData;
+  const { title, content: prompt_content, model } = promptData;
   const isNewPrompt = promptData.id === null;
 
   const isPremiumUser = userRole === 'pro' || userRole === 'enterprise';
@@ -57,7 +57,7 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
       ...promptData,
       [name]: value,
     });
-    if (name === 'prompt_content' && refineError) {
+    if (name === 'content' && refineError) {
         setRefineError(null); // Clear error on manual edit of prompt content
     }
   };
@@ -72,7 +72,7 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
   const handlePromptContentChange = (newContent: string) => {
     onPromptDataChange({
         ...promptData,
-        prompt_content: newContent,
+        content: newContent,
     });
   };
 
@@ -165,7 +165,7 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
         </div>
         <textarea 
             id="prompt-content"
-            name="prompt_content"
+            name="content"
             value={prompt_content || ''} 
             onChange={handleInputChange}
             placeholder="Enter your AI prompt here…\nExample: Summarize the following text for a 5th grader: {{text_to_summarize}}"

@@ -11,7 +11,7 @@ import { useAuth } from '@/app/(contexts)/AuthContext';
 import Link from 'next/link';
 
 // Types
-interface Prompt {
+export interface Prompt {
   id: string | null;
   title: string;
   content: string;
