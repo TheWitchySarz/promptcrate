@@ -1,10 +1,4 @@
-` tags.
 
-```
-Fixing the undefined product_name variable in the Home component.
-```
-
-<replit_final_file>
 "use client";
 import Image from "next/image";
 import { motion } from "framer-motion";
