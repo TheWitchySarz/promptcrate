@@ -180,7 +180,7 @@ export default function Home() {
               },
               {
                 name: "Pro",
-                price: "$19",
+                price: "$26",
                 period: "/month",
                 description: "For serious prompt engineers",
                 features: [

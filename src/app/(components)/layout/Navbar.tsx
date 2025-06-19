@@ -61,55 +61,55 @@ const Navbar = () => {
     // router.push('/'); // Optional: redirect to home after logout, handled by AuthContext changes too
   };
 
-  const NavLinks = () => {
+  const handleProtectedRoute = (route: string, e: React.MouseEvent) => {
     if (!isLoggedIn) {
-      return (
-        <>
-          <li><Link href="/features" className="text-gray-900 hover:text-purple-400 transition-colors">Features</Link></li>
-          <li><Link href="/#mockup" className="text-gray-900 hover:text-purple-400 transition-colors">Product</Link></li>
-          <li><Link href="/#pricing" className="text-gray-900 hover:text-purple-400 transition-colors">Pricing</Link></li>
-        </>
-      );
+      e.preventDefault();
+      window.location.href = '/signup';
     }
-    switch (userRole) {
-      case 'free':
-        return (
+  };
+
+  const NavLinks = () => {
+    const homeHref = isLoggedIn ? "/home" : "/";
+    
+    return (
+      <>
+        <li><Link href={homeHref} className="text-gray-900 hover:text-purple-400 transition-colors">Home</Link></li>
+        <li><Link href="/features" className="text-gray-900 hover:text-purple-400 transition-colors">Features</Link></li>
+        <li>
+          <Link 
+            href="/app/editor" 
+            className="text-gray-900 hover:text-purple-400 transition-colors"
+            onClick={(e) => handleProtectedRoute('/app/editor', e)}
+          >
+            Prompt Editor
+          </Link>
+        </li>
+        <li>
+          <Link 
+            href="/marketplace" 
+            className="text-gray-900 hover:text-purple-400 transition-colors"
+            onClick={(e) => handleProtectedRoute('/marketplace', e)}
+          >
+            Marketplace
+          </Link>
+        </li>
+        <li><Link href="/#pricing" className="text-gray-900 hover:text-purple-400 transition-colors">Pricing</Link></li>
+        {isLoggedIn && userRole === 'pro' && (
           <>
-            <li><Link href="/" className="text-gray-900 hover:text-purple-400 transition-colors">Home</Link></li>
-            <li><Link href="/features" className="text-gray-900 hover:text-purple-400 transition-colors">Features</Link></li>
-            <li><Link href="/app/editor" className="text-gray-900 hover:text-purple-400 transition-colors">Prompt Editor</Link></li>
-            <li><Link href="/marketplace" className="text-gray-900 hover:text-purple-400 transition-colors">Marketplace</Link></li>
-            <li><Link href="/blog" className="text-gray-900 hover:text-purple-400 transition-colors">Blog</Link></li>
-            <li><Link href="/#pricing" className="text-gray-900 hover:text-purple-400 transition-colors">Pricing</Link></li>
-          </>
-        );
-      case 'pro':
-        return (
-          <>
-            <li><Link href="/" className="text-gray-900 hover:text-purple-400 transition-colors">Home</Link></li>
-            <li><Link href="/app/editor" className="text-gray-900 hover:text-purple-400 transition-colors">Prompt Editor</Link></li>
-            <li><Link href="/marketplace" className="text-gray-900 hover:text-purple-400 transition-colors">Marketplace</Link></li>
-            <li><Link href="/blog" className="text-gray-900 hover:text-purple-400 transition-colors">Blog</Link></li>
             <li><Link href="/app/my-library" className="text-gray-900 hover:text-purple-400 transition-colors">My Library</Link></li>
             <li><Link href="/upload" className="text-gray-900 hover:text-purple-400 transition-colors">Upload Prompt</Link></li>
           </>
-        );
-      case 'enterprise':
-        return (
+        )}
+        {isLoggedIn && userRole === 'enterprise' && (
           <>
-            <li><Link href="/" className="text-gray-900 hover:text-purple-400 transition-colors">Home</Link></li>
-            <li><Link href="/app/editor" className="text-gray-900 hover:text-purple-400 transition-colors">Prompt Editor</Link></li>
             <li><Link href="/app/team-library" className="text-gray-900 hover:text-purple-400 transition-colors">Team Library</Link></li>
             <li><Link href="/app/analytics" className="text-gray-900 hover:text-purple-400 transition-colors">Analytics</Link></li>
-            <li><Link href="/marketplace" className="text-gray-900 hover:text-purple-400 transition-colors">Marketplace</Link></li>
-            <li><Link href="/blog" className="text-gray-900 hover:text-purple-400 transition-colors">Blog</Link></li>
             <li><Link href="/upload" className="text-gray-900 hover:text-purple-400 transition-colors">Upload Prompt</Link></li>
             <li><Link href="/admin/console" className="text-gray-900 hover:text-purple-400 transition-colors">Admin Console</Link></li>
           </>
-        );
-      default:
-        return null;
-    }
+        )}
+      </>
+    );
   };
 
   const AccountDropdownLinks = () => {
@@ -134,42 +134,45 @@ const Navbar = () => {
     );
 
     // Mobile links (can be combined with desktop or handled separately in mobile menu)
-    const mobileNavLinks = (
-        <div className="border-t border-gray-100 pt-2 pb-3 space-y-1">
-            {userRole === 'free' && (
-                <>
-                    <Link href="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</Link>
-                    <Link href="/features" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Features</Link>
-                    <Link href="/marketplace" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Marketplace</Link>
-                    <Link href="/blog" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Blog</Link>
-                    <Link href="/#pricing" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Pricing</Link>
-                    <Link href="/app/editor" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Prompt Editor</Link>
-                </>
-            )}
-            {userRole === 'pro' && (
-                <>
-                    <Link href="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</Link>
-                    <Link href="/app/editor" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Prompt Editor</Link>
-                    <Link href="/marketplace" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Marketplace</Link>
-                    <Link href="/blog" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Blog</Link>
-                    <Link href="/app/my-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">My Library</Link>
-                    <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
-                </>
-            )}
-            {userRole === 'enterprise' && (
-                 <>
-                    <Link href="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</Link>
-                    <Link href="/app/editor" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Prompt Editor</Link>
-                    <Link href="/app/team-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Team Library</Link>
-                    <Link href="/app/analytics" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Analytics</Link>
-                    <Link href="/marketplace" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Marketplace</Link>
-                    <Link href="/blog" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Blog</Link>
-                    <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
-                    <Link href="/admin/console" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Admin Console</Link>
-                </>
-            )}
-        </div>
-    );
+    const MobileNavLinks = () => {
+      const homeHref = isLoggedIn ? "/home" : "/";
+      
+      return (
+        <>
+          <Link href={homeHref} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</Link>
+          <Link href="/features" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Features</Link>
+          <Link 
+            href="/app/editor" 
+            className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+            onClick={(e) => handleProtectedRoute('/app/editor', e)}
+          >
+            Prompt Editor
+          </Link>
+          <Link 
+            href="/marketplace" 
+            className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
+            onClick={(e) => handleProtectedRoute('/marketplace', e)}
+          >
+            Marketplace
+          </Link>
+          <Link href="/#pricing" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Pricing</Link>
+          {isLoggedIn && userRole === 'pro' && (
+            <>
+              <Link href="/app/my-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">My Library</Link>
+              <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
+            </>
+          )}
+          {isLoggedIn && userRole === 'enterprise' && (
+            <>
+              <Link href="/app/team-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Team Library</Link>
+              <Link href="/app/analytics" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Analytics</Link>
+              <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
+              <Link href="/admin/console" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Admin Console</Link>
+            </>
+          )}
+        </>
+      );
+    };
 
     return (
       <div className="py-1 rounded-md bg-white shadow-xs ring-1 ring-black ring-opacity-5">
@@ -192,7 +195,7 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
-            <Link href="/" className="flex-shrink-0 text-2xl font-bold text-purple-600">
+            <Link href={isLoggedIn ? "/home" : "/"} className="flex-shrink-0 text-2xl font-bold text-purple-600">
               PromptCrate
             </Link>
             <div className="hidden md:block">
@@ -270,7 +273,7 @@ const Navbar = () => {
             className="md:hidden overflow-hidden"
           >
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              <NavLinks /> {/* Display NavLinks directly for mobile, as per original structure, assuming it handles logged in/out states */}
+              <MobileNavLinks />
             </div>
             {/* Account actions for mobile if logged in */}
             {isLoggedIn && (
