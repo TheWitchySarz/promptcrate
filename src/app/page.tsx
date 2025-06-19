@@ -663,25 +663,25 @@ export default function Home() {
             <div className="grid md:grid-cols-3 gap-8 mb-12">
               {[
                 {
-                  title: "Mastering ChatGPT Prompts: A Complete Guide for 2024",
-                  excerpt: "Learn the essential techniques for creating effective ChatGPT prompts that deliver consistent results.",
-                  author: "Sarah Chen",
-                  date: "Jan 15, 2024",
-                  slug: "mastering-chatgpt-prompts"
+                  title: "AI Agents and Advanced Prompt Engineering: What's New in 2025",
+                  excerpt: "Explore the latest developments in AI agent architecture and how advanced prompt engineering is shaping autonomous AI systems.",
+                  author: "Dr. Rachel Kim",
+                  date: "Jan 15, 2025",
+                  slug: "ai-agents-prompt-engineering-2025"
                 },
                 {
-                  title: "Claude vs ChatGPT: Optimizing Prompts for Different AI Models", 
-                  excerpt: "Discover the key differences between prompting strategies for Claude and ChatGPT.",
-                  author: "Marcus Rodriguez",
-                  date: "Jan 12, 2024",
-                  slug: "claude-vs-chatgpt-prompting"
+                  title: "Multimodal Prompt Strategies: Text, Image, and Video Integration", 
+                  excerpt: "Master the art of creating prompts that work seamlessly across text, image, and video AI models.",
+                  author: "Alex Chen",
+                  date: "Jan 12, 2025",
+                  slug: "multimodal-prompt-strategies"
                 },
                 {
-                  title: "10 Prompt Engineering Best Practices Every Developer Should Know",
-                  excerpt: "Essential best practices and common pitfalls to avoid when designing AI prompts.",
-                  author: "Dr. Alex Thompson", 
-                  date: "Jan 10, 2024",
-                  slug: "prompt-engineering-best-practices"
+                  title: "The Economics of Prompt Marketplaces: 2025 Market Analysis",
+                  excerpt: "Analyze the evolving economics of AI prompt marketplaces and discover new monetization strategies.",
+                  author: "Sarah Mitchell", 
+                  date: "Jan 8, 2025",
+                  slug: "prompt-marketplace-economics-2025"
                 }
               ].map((post, index) => (
                 <Link key={index} href={`/blog/${post.slug}`}>

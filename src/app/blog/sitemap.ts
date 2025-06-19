@@ -8,7 +8,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     'prompt-engineering-best-practices',
     'monetizing-ai-prompts',
     'future-of-prompt-engineering',
-    'prompt-templates-guide'
+    'prompt-templates-guide',
+    'ai-agents-prompt-engineering-2025',
+    'multimodal-prompt-strategies',
+    'prompt-marketplace-economics-2025'
   ];
 
   const baseUrl = 'https://promptcrate.ai';

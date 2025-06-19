@@ -86,6 +86,45 @@ const blogPosts = [
     tags: ['Templates', 'Reusability', 'Design'],
     image: '/blog/prompt-templates.jpg',
     featured: false
+  },
+  {
+    id: 'ai-agents-prompt-engineering-2025',
+    title: 'AI Agents and Advanced Prompt Engineering: What\'s New in 2025',
+    excerpt: 'Explore the latest developments in AI agent architecture and how advanced prompt engineering is shaping autonomous AI systems.',
+    content: 'Full blog post content would go here...',
+    author: 'Dr. Rachel Kim',
+    date: '2025-01-15',
+    readTime: '11 min',
+    category: 'Industry',
+    tags: ['AI Agents', '2025 Trends', 'Advanced Prompting'],
+    image: '/blog/ai-agents-2025.jpg',
+    featured: true
+  },
+  {
+    id: 'multimodal-prompt-strategies',
+    title: 'Multimodal Prompt Strategies: Text, Image, and Video Integration',
+    excerpt: 'Master the art of creating prompts that work seamlessly across text, image, and video AI models for comprehensive solutions.',
+    content: 'Full blog post content would go here...',
+    author: 'Alex Chen',
+    date: '2025-01-12',
+    readTime: '8 min',
+    category: 'Tutorials',
+    tags: ['Multimodal', 'Integration', 'Advanced'],
+    image: '/blog/multimodal-prompts.jpg',
+    featured: false
+  },
+  {
+    id: 'prompt-marketplace-economics-2025',
+    title: 'The Economics of Prompt Marketplaces: 2025 Market Analysis',
+    excerpt: 'Analyze the evolving economics of AI prompt marketplaces and discover new monetization strategies for prompt creators.',
+    content: 'Full blog post content would go here...',
+    author: 'Sarah Mitchell',
+    date: '2025-01-08',
+    readTime: '10 min',
+    category: 'Business',
+    tags: ['Marketplace', 'Economics', 'Monetization'],
+    image: '/blog/marketplace-economics.jpg',
+    featured: true
   }
 ];
 
