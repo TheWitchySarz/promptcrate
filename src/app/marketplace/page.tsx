@@ -10,7 +10,7 @@ import { useAuth } from '@/app/(contexts)/AuthContext';
 import Link from 'next/link';
 import Image from 'next/image';
 
-interface MarketplacePrompt {
+export interface MarketplacePrompt {
   id: string;
   title: string;
   description: string;
@@ -32,6 +32,7 @@ interface MarketplacePrompt {
   trending: boolean;
   verified: boolean;
   preview?: string;
+  source?: string;
 }
 
 const FEATURED_PROMPTS: MarketplacePrompt[] = [
