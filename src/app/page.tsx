@@ -109,61 +109,146 @@ function UIMockupSection() {
               initial={{ opacity: 0, y: 10 }} 
               animate={{ opacity: 1, y: 0 }} 
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="w-full h-full flex flex-col bg-gray-50 rounded-md p-4 md:p-6 text-left overflow-auto"
+              className="w-full h-full flex bg-white rounded-md overflow-hidden"
             >
-              {/* Editor Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                <input type="text" defaultValue="My Awesome Prompt Title" className="w-full sm:w-2/3 bg-white border border-gray-300 rounded-md px-3 py-2 text-sm font-medium text-gray-700 focus:ring-1 focus:ring-purple-500 focus:border-purple-500" />
-                <select className="w-full sm:w-auto bg-white border border-gray-300 rounded-md px-3 py-2 text-sm text-gray-600 focus:ring-1 focus:ring-purple-500 focus:border-purple-500">
-                  <option>ChatGPT-4 Turbo</option>
-                  <option>Claude 3 Opus</option>
-                  <option>Gemini Pro</option>
-                </select>
-              </div>
-              {/* Editor Text Area */}
-              <textarea 
-                readOnly 
-                className="flex-grow w-full bg-gray-800 text-gray-200 font-mono text-xs sm:text-sm p-4 rounded-md resize-none border border-gray-700 shadow-inner leading-relaxed focus:outline-none"
-                value="Generate a marketing email campaign for a new {{product_name}} targeting {{target_audience}}.\\n\\nInclude:\\n- A catchy subject line.\\n- An engaging introduction.\\n- 3 key benefits of the {{product_name}}.\\n- A clear call to action to {{desired_action}}."
-              />
-              {/* Editor Footer/Actions */}
-              <div className="flex flex-col sm:flex-row items-center justify-end gap-3 mt-4">
-                <Link
-                  href="/signup"
-                  className="px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors text-center w-full sm:w-auto"
-                >
-                  Save Draft
-                </Link>
-                <button 
-                  onClick={handleMockTest}
-                  disabled={isMockTesting}
-                  className="px-4 py-2 text-xs sm:text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed w-full sm:w-auto"
-                >
-                  {isMockTesting ? 'Testing...' : 'Test Prompt'}
-                </button>
+              {/* Sidebar */}
+              <div className="w-1/4 bg-gray-50 border-r border-gray-200 p-3">
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-gray-700 mb-2">MY PROMPTS</div>
+                  <div className="bg-purple-100 text-purple-800 rounded-lg p-2 text-xs">
+                    <div className="font-medium truncate">Marketing Email Gen</div>
+                    <div className="text-purple-600">2 hours ago</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-2 text-xs border border-gray-200">
+                    <div className="font-medium truncate">Code Review Assistant</div>
+                    <div className="text-gray-500">1 day ago</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-2 text-xs border border-gray-200">
+                    <div className="font-medium truncate">Blog Post Generator</div>
+                    <div className="text-gray-500">3 days ago</div>
+                  </div>
+                </div>
               </div>
 
-              {/* Mock AI Output Section */}
-              {showMockOutput && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                  animate={{ opacity: 1, height: 'auto', marginTop: '1rem' }}
-                  exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                  transition={{ duration: 0.3, ease: "easeInOut" }}
-                  className="bg-gray-800 border border-gray-700 rounded-md p-4 text-left mt-4 shadow-inner"
-                >
-                  <h4 className="text-sm font-semibold text-purple-400 mb-2">Mock AI Output:</h4>
-                  <pre className="whitespace-pre-wrap text-xs sm:text-sm text-gray-200 font-sans leading-relaxed select-text">
-                    {mockOutputContent}
-                  </pre>
-                  <button 
-                    onClick={() => setShowMockOutput(false)}
-                    className="text-xs text-purple-400 hover:text-purple-300 mt-3 underline"
+              {/* Main Editor */}
+              <div className="flex-1 flex flex-col">
+                {/* Header */}
+                <div className="border-b border-gray-200 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <input type="text" defaultValue="Marketing Email Generator" className="text-sm font-semibold text-gray-900 bg-transparent border-none focus:outline-none p-0" />
+                    <div className="flex items-center space-x-2">
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">Saved</span>
+                      <span className="text-xs text-gray-500">v1</span>
+                    </div>
+                  </div>
+                  <div className="flex space-x-3 text-xs">
+                    <button className="text-purple-700 bg-purple-100 px-2 py-1 rounded">Editor</button>
+                    <button className="text-gray-600 hover:text-gray-900">Test</button>
+                    <button className="text-gray-600 hover:text-gray-900">Settings</button>
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 p-3 overflow-auto">
+                  {/* Model Selection */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 mb-3">
+                    <div className="text-xs font-medium text-gray-700 mb-2">AI Model</div>
+                    <select className="w-full text-xs border border-gray-300 rounded px-2 py-1">
+                      <option>GPT-4 Turbo - $0.01/1K tokens</option>
+                      <option>Claude 3 Opus - $0.015/1K tokens</option>
+                    </select>
+                  </div>
+
+                  {/* Prompt Content */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-3 mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-medium text-gray-700">Prompt Content</div>
+                      <button className="flex items-center space-x-1 text-xs bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded">
+                        <span>✨</span>
+                        <span>AI Optimize</span>
+                      </button>
+                    </div>
+                    <textarea 
+                      readOnly 
+                      className="w-full h-24 text-xs border border-gray-300 rounded p-2 font-mono resize-none"
+                      value="Generate a marketing email campaign for a new {{product_name}} targeting {{target_audience}}.
+
+Include:
+- A catchy subject line
+- An engaging introduction  
+- 3 key benefits of the {{product_name}}
+- A clear call to action to {{desired_action}}"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>245 characters</span>
+                      <span>~61 tokens</span>
+                    </div>
+                  </div>
+
+                  {/* Variables */}
+                  <div className="bg-white border border-gray-200 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-medium text-gray-700">Variables</div>
+                      <button className="text-xs bg-purple-600 text-white px-2 py-1 rounded">+ Add</button>
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
+                        <div className="flex items-center space-x-2">
+                          <code className="bg-purple-100 text-purple-700 px-1 rounded">{{product_name}}</code>
+                          <span className="text-gray-600">Product name</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded text-xs">
+                        <div className="flex items-center space-x-2">
+                          <code className="bg-purple-100 text-purple-700 px-1 rounded">{{target_audience}}</code>
+                          <span className="text-gray-600">Target audience</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="border-t border-gray-200 p-3">
+                  <div className="flex items-center justify-end space-x-2">
+                    <Link
+                      href="/signup"
+                      className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
+                    >
+                      Save Draft
+                    </Link>
+                    <button 
+                      onClick={handleMockTest}
+                      disabled={isMockTesting}
+                      className="px-3 py-1 text-xs font-medium text-white bg-purple-600 rounded hover:bg-purple-700 transition-colors disabled:opacity-70"
+                    >
+                      {isMockTesting ? 'Testing...' : 'Test Prompt'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Mock Output */}
+                {showMockOutput && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="border-t border-gray-200 p-3 bg-gray-50"
                   >
-                    Clear Output
-                  </button>
-                </motion.div>
-              )}
+                    <div className="text-xs font-semibold text-purple-700 mb-2">AI Output:</div>
+                    <div className="bg-white border border-gray-200 rounded p-2 text-xs text-gray-900 max-h-24 overflow-auto">
+                      {mockOutputContent}
+                    </div>
+                    <button 
+                      onClick={() => setShowMockOutput(false)}
+                      className="text-xs text-purple-600 hover:text-purple-700 mt-2"
+                    >
+                      Clear Output
+                    </button>
+                  </motion.div>
+                )}
+              </div>
             </motion.div>
           )}
           {activeTab === "marketplace" && (
@@ -172,31 +257,178 @@ function UIMockupSection() {
               initial={{ opacity: 0, y: 10 }} 
               animate={{ opacity: 1, y: 0 }} 
               transition={{ duration: 0.3, ease: "easeOut" }}
-              className="w-full h-full flex flex-col bg-gray-100 rounded-md p-4 md:p-6 text-left overflow-auto"
+              className="w-full h-full flex flex-col bg-gradient-to-br from-purple-600 to-blue-600 rounded-md overflow-hidden"
             >
-              <h3 className="text-xl font-semibold text-gray-700 mb-4">Explore Prompts</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[
-                  { title: "SEO Blog Post Wizard", author: "AI Enthusiast", price: "$10", model: "ChatGPT-4" },
-                  { title: "Twitter Thread Generator", author: "SocialNinja", price: "Free", model: "Claude 2" },
-                  { title: "Code Explanation Pro", author: "DevGuru", price: "$15", model: "Gemini Pro" },
-                  { title: "Landing Page Copywriter", author: "MarketingMaven", price: "$20", model: "ChatGPT-4" },
-                ].map((prompt, index) => (
-                  <div key={index} className="bg-white rounded-lg shadow border border-gray-200 p-4 flex flex-col text-sm">
-                    <h4 className="text-base font-semibold text-purple-700 mb-1 truncate">{prompt.title}</h4>
-                    <p className="text-gray-500 mb-1 text-xs">By: {prompt.author}</p>
-                    <p className="text-xs text-gray-400 mb-2">Model: <span className="font-medium text-gray-600">{prompt.model}</span></p>
-                    <p className="text-lg font-bold text-gray-800 mb-3">{prompt.price}</p>
-                    <Link 
-                      href="/signup"
-                      className="mt-auto w-full px-3 py-1.5 text-xs font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 transition-colors text-center"
-                    >
-                      View Prompt
-                    </Link>
+              {/* Hero Section */}
+              <div className="text-center text-white p-4">
+                <h3 className="text-lg font-bold mb-1">Discover Amazing AI Prompts</h3>
+                <p className="text-xs text-purple-100 mb-3">Browse thousands of expertly crafted prompts</p>
+                <div className="bg-white/10 rounded-lg p-2 mb-3">
+                  <input 
+                    type="text" 
+                    placeholder="Search prompts..." 
+                    className="w-full bg-white text-gray-900 text-xs rounded px-2 py-1 placeholder-gray-500"
+                    readOnly
+                  />
+                </div>
+                <div className="flex justify-center space-x-4 text-center text-xs">
+                  <div>
+                    <div className="font-bold">1,247</div>
+                    <div className="text-purple-200">Prompts</div>
                   </div>
-                ))}
+                  <div>
+                    <div className="font-bold">15K</div>
+                    <div className="text-purple-200">Downloads</div>
+                  </div>
+                  <div>
+                    <div className="font-bold">892</div>
+                    <div className="text-purple-200">Creators</div>
+                  </div>
+                </div>
               </div>
-               <p className="text-sm text-gray-500 mt-6 text-center">...and many more!</p>
+
+              {/* Content */}
+              <div className="flex-1 bg-white p-3 overflow-auto">
+                {/* Filters */}
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex space-x-2">
+                    <select className="text-xs border border-gray-300 rounded px-2 py-1">
+                      <option>All Categories</option>
+                      <option>Marketing</option>
+                      <option>Development</option>
+                    </select>
+                    <select className="text-xs border border-gray-300 rounded px-2 py-1">
+                      <option>All Models</option>
+                      <option>GPT-4</option>
+                      <option>Claude</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <button className="p-1 bg-purple-600 text-white rounded">
+                      <div className="w-3 h-3 grid grid-cols-2 gap-0.5">
+                        <div className="bg-white rounded-sm"></div>
+                        <div className="bg-white rounded-sm"></div>
+                        <div className="bg-white rounded-sm"></div>
+                        <div className="bg-white rounded-sm"></div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Featured Badge */}
+                <div className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
+                  <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-2 py-1 rounded-full mr-2">👑 FEATURED</span>
+                  Featured Prompts
+                </div>
+
+                {/* Prompt Grid */}
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { 
+                      title: "Ultimate SEO Content Generator", 
+                      author: "ContentMaster Pro", 
+                      price: "$29.99", 
+                      originalPrice: "$49.99",
+                      rating: "4.9", 
+                      downloads: "1.5K",
+                      model: "GPT-4",
+                      trending: true,
+                      verified: true
+                    },
+                    { 
+                      title: "AI Code Reviewer", 
+                      author: "DevGuru AI", 
+                      price: "$19.99", 
+                      rating: "4.8", 
+                      downloads: "892",
+                      model: "Claude 3.5",
+                      trending: false,
+                      verified: true
+                    },
+                    { 
+                      title: "Creative Story Builder", 
+                      author: "StoryWeaver", 
+                      price: "Free", 
+                      rating: "4.7", 
+                      downloads: "2.8K",
+                      model: "GPT-4",
+                      trending: true,
+                      verified: false
+                    },
+                    { 
+                      title: "Email Marketing Pro", 
+                      author: "MarketingGuru", 
+                      price: "$15.99", 
+                      rating: "4.6", 
+                      downloads: "567",
+                      model: "GPT-4",
+                      trending: false,
+                      verified: true
+                    }
+                  ].map((prompt, index) => (
+                    <div key={index} className="bg-white border border-gray-200 rounded-lg p-2 hover:shadow-md transition-shadow relative">
+                      {prompt.trending && (
+                        <div className="absolute -top-1 -right-1 bg-green-100 text-green-700 text-xs px-1 rounded-full flex items-center">
+                          📈
+                        </div>
+                      )}
+                      
+                      {/* Header */}
+                      <div className="flex items-center space-x-1 mb-2">
+                        <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center text-white text-xs">
+                          {prompt.author.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-900 truncate flex items-center">
+                            {prompt.author}
+                            {prompt.verified && <span className="ml-1 text-blue-500">✓</span>}
+                          </p>
+                          <p className="text-xs text-gray-500">{prompt.model}</p>
+                        </div>
+                      </div>
+
+                      {/* Content */}
+                      <h4 className="text-xs font-bold text-gray-900 mb-1 line-clamp-2 leading-tight">{prompt.title}</h4>
+                      
+                      {/* Tags */}
+                      <div className="flex gap-1 mb-2">
+                        <span className="bg-gray-100 text-gray-700 px-1 rounded text-xs">SEO</span>
+                        <span className="bg-gray-100 text-gray-700 px-1 rounded text-xs">Content</span>
+                      </div>
+
+                      {/* Stats */}
+                      <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
+                        <span className="flex items-center">
+                          ⭐ {prompt.rating}
+                        </span>
+                        <span className="flex items-center">
+                          📥 {prompt.downloads}
+                        </span>
+                      </div>
+
+                      {/* Price & Action */}
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-sm font-bold text-gray-900">{prompt.price}</span>
+                          {prompt.originalPrice && (
+                            <span className="text-xs text-gray-400 line-through ml-1">{prompt.originalPrice}</span>
+                          )}
+                        </div>
+                        <Link 
+                          href="/signup"
+                          className="px-2 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 transition-colors"
+                        >
+                          Use
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="text-center mt-3">
+                  <button className="text-xs text-purple-600 font-medium">View All Prompts →</button>
+                </div>
+              </div>
             </motion.div>
           )}
         </div>
