@@ -414,6 +414,76 @@ export default function Home() {
 
         <WhyPromptCrateSection />
 
+        {/* Blog Section */}
+        <section className="max-w-7xl mx-auto px-6 py-24 bg-white">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+          >
+            <h2 className="text-3xl sm:text-4xl font-semibold mb-6 text-gray-900 text-center">
+              Latest from Our Blog
+            </h2>
+            <p className="text-lg text-gray-600 mb-12 max-w-xl mx-auto text-center">
+              Stay ahead with expert insights on AI prompt engineering, best practices, and industry trends.
+            </p>
+            <div className="grid md:grid-cols-3 gap-8 mb-12">
+              {[
+                {
+                  title: "Mastering ChatGPT Prompts: A Complete Guide for 2024",
+                  excerpt: "Learn the essential techniques for creating effective ChatGPT prompts that deliver consistent results.",
+                  author: "Sarah Chen",
+                  date: "Jan 15, 2024",
+                  slug: "mastering-chatgpt-prompts"
+                },
+                {
+                  title: "Claude vs ChatGPT: Optimizing Prompts for Different AI Models", 
+                  excerpt: "Discover the key differences between prompting strategies for Claude and ChatGPT.",
+                  author: "Marcus Rodriguez",
+                  date: "Jan 12, 2024",
+                  slug: "claude-vs-chatgpt-prompting"
+                },
+                {
+                  title: "10 Prompt Engineering Best Practices Every Developer Should Know",
+                  excerpt: "Essential best practices and common pitfalls to avoid when designing AI prompts.",
+                  author: "Dr. Alex Thompson", 
+                  date: "Jan 10, 2024",
+                  slug: "prompt-engineering-best-practices"
+                }
+              ].map((post, index) => (
+                <Link key={index} href={`/blog/${post.slug}`}>
+                  <motion.article
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    className="bg-white rounded-xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-shadow group"
+                  >
+                    <div className="h-32 bg-gradient-to-br from-purple-500 to-blue-500 rounded-lg mb-4"></div>
+                    <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors">
+                      {post.title}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4">{post.excerpt}</p>
+                    <div className="flex items-center justify-between text-sm text-gray-500">
+                      <span>{post.author}</span>
+                      <span>{post.date}</span>
+                    </div>
+                  </motion.article>
+                </Link>
+              ))}
+            </div>
+            <div className="text-center">
+              <Link 
+                href="/blog"
+                className="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium"
+              >
+                View All Articles
+              </Link>
+            </div>
+          </motion.div>
+        </section>
+
         <section id="pricing" className="max-w-7xl mx-auto px-6 py-24 bg-gray-50">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

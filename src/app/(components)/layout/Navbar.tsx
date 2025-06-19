@@ -79,6 +79,7 @@ const Navbar = () => {
             <li><Link href="/features" className="text-gray-900 hover:text-purple-400 transition-colors">Features</Link></li>
             <li><Link href="/app/editor" className="text-gray-900 hover:text-purple-400 transition-colors">Prompt Editor</Link></li>
             <li><Link href="/marketplace" className="text-gray-900 hover:text-purple-400 transition-colors">Marketplace</Link></li>
+            <li><Link href="/blog" className="text-gray-900 hover:text-purple-400 transition-colors">Blog</Link></li>
             <li><Link href="/#pricing" className="text-gray-900 hover:text-purple-400 transition-colors">Pricing</Link></li>
           </>
         );
@@ -88,6 +89,7 @@ const Navbar = () => {
             <li><Link href="/" className="text-gray-900 hover:text-purple-400 transition-colors">Home</Link></li>
             <li><Link href="/app/editor" className="text-gray-900 hover:text-purple-400 transition-colors">Prompt Editor</Link></li>
             <li><Link href="/marketplace" className="text-gray-900 hover:text-purple-400 transition-colors">Marketplace</Link></li>
+            <li><Link href="/blog" className="text-gray-900 hover:text-purple-400 transition-colors">Blog</Link></li>
             <li><Link href="/app/my-library" className="text-gray-900 hover:text-purple-400 transition-colors">My Library</Link></li>
             <li><Link href="/upload" className="text-gray-900 hover:text-purple-400 transition-colors">Upload Prompt</Link></li>
           </>
@@ -100,6 +102,7 @@ const Navbar = () => {
             <li><Link href="/app/team-library" className="text-gray-900 hover:text-purple-400 transition-colors">Team Library</Link></li>
             <li><Link href="/app/analytics" className="text-gray-900 hover:text-purple-400 transition-colors">Analytics</Link></li>
             <li><Link href="/marketplace" className="text-gray-900 hover:text-purple-400 transition-colors">Marketplace</Link></li>
+            <li><Link href="/blog" className="text-gray-900 hover:text-purple-400 transition-colors">Blog</Link></li>
             <li><Link href="/upload" className="text-gray-900 hover:text-purple-400 transition-colors">Upload Prompt</Link></li>
             <li><Link href="/admin/console" className="text-gray-900 hover:text-purple-400 transition-colors">Admin Console</Link></li>
           </>
@@ -138,6 +141,7 @@ const Navbar = () => {
                     <Link href="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</Link>
                     <Link href="/features" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Features</Link>
                     <Link href="/marketplace" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Marketplace</Link>
+                    <Link href="/blog" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Blog</Link>
                     <Link href="/#pricing" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Pricing</Link>
                     <Link href="/app/editor" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Prompt Editor</Link>
                 </>
@@ -147,6 +151,7 @@ const Navbar = () => {
                     <Link href="/" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</Link>
                     <Link href="/app/editor" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Prompt Editor</Link>
                     <Link href="/marketplace" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Marketplace</Link>
+                    <Link href="/blog" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Blog</Link>
                     <Link href="/app/my-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">My Library</Link>
                     <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
                 </>
@@ -158,6 +163,7 @@ const Navbar = () => {
                     <Link href="/app/team-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Team Library</Link>
                     <Link href="/app/analytics" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Analytics</Link>
                     <Link href="/marketplace" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Marketplace</Link>
+                    <Link href="/blog" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Blog</Link>
                     <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
                     <Link href="/admin/console" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Admin Console</Link>
                 </>
