@@ -136,12 +136,35 @@ function PromptEditorContent() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      console.log('Saving prompt:', currentPrompt);
-      setIsSaving(false);
+      const response = await fetch('/api/prompts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: currentPrompt.title,
+          prompt_content: currentPrompt.content,
+          description: currentPrompt.description,
+          model: currentPrompt.model,
+          variables: currentPrompt.variables,
+          tags: currentPrompt.tags,
+          is_public: currentPrompt.visibility === 'public',
+          version: currentPrompt.version
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save prompt');
+      }
+
+      const savedPrompt = await response.json();
+      setCurrentPrompt(prev => ({ ...prev, id: savedPrompt.id }));
+      console.log('Prompt saved successfully:', savedPrompt);
     } catch (error) {
       console.error('Error saving prompt:', error);
+      alert('Failed to save prompt: ' + (error as Error).message);
+    } finally {
       setIsSaving(false);
     }
   };
