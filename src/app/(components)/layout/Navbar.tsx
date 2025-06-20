@@ -70,7 +70,7 @@ const Navbar = () => {
 
   const NavLinks = () => {
     const homeHref = isLoggedIn ? "/home" : "/";
-    
+
     return (
       <>
         <li><Link href={homeHref} className="text-gray-900 hover:text-purple-400 transition-colors">Home</Link></li>
@@ -133,7 +133,7 @@ const Navbar = () => {
       </>
     );
 
-    
+
 
     return (
       <div className="py-1 rounded-md bg-white shadow-xs ring-1 ring-black ring-opacity-5">
@@ -154,7 +154,7 @@ const Navbar = () => {
   // Mobile links (can be combined with desktop or handled separately in mobile menu)
   const MobileNavLinks = () => {
     const homeHref = isLoggedIn ? "/home" : "/";
-    
+
     return (
       <>
         <Link href={homeHref} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</Link>

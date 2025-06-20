@@ -252,7 +252,7 @@ export default function MarketplacePage() {
                   <Copy size={16} />
                 )}
               </button>
-              <Link href={`/app/editor?title=${encodeURIComponent(prompt.title)}&prompt=${encodeURIComponent(prompt.promptBody)}&model=${encodeURIComponent(prompt.model)}`}>
+              <Link href={`/app/editor?title=${encodeURIComponent(prompt.title)}&content=${encodeURIComponent(prompt.promptBody)}&model=${encodeURIComponent(prompt.model)}`}>
                 <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium">
                   Use Prompt
                 </button>
@@ -291,7 +291,7 @@ export default function MarketplacePage() {
                 >
                   {copiedPrompt === prompt.id ? <Check size={14} /> : <Copy size={14} />}
                 </button>
-                <Link href={`/app/editor?title=${encodeURIComponent(prompt.title)}&prompt=${encodeURIComponent(prompt.promptBody)}&model=${encodeURIComponent(prompt.model)}`}>
+                <Link href={`/app/editor?title=${encodeURIComponent(prompt.title)}&content=${encodeURIComponent(prompt.promptBody)}&model=${encodeURIComponent(prompt.model)}`}>
                   <button className="px-3 py-1 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors">
                     Use
                   </button>

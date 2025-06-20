@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -51,7 +50,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Welcome Section */}
         <motion.div
@@ -103,7 +102,7 @@ export default function HomePage() {
                   Create New
                 </Link>
               </div>
-              
+
               <div className="space-y-4">
                 {recentPrompts.map((prompt, index) => (
                   <div key={index} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
@@ -138,6 +137,19 @@ export default function HomePage() {
               <Link href="/upload">
                 <button className="bg-white text-purple-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors">
                   Get Started
+                </button>
+              </Link>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Quick Actions</h3>
+              <p className="text-gray-600 mb-4 text-sm">
+                Jump right into creating your next prompt
+              </p>
+              <Link href="/app/editor">
+                <button className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors">
+                  Create New Prompt
                 </button>
               </Link>
             </div>

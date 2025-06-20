@@ -4,7 +4,7 @@ import React, { useState, ChangeEvent } from 'react';
 import { Save, Info, Brain, Loader2 } from 'lucide-react';
 // Import AI_MODELS from the new constants file
 import { AI_MODELS as availableEditorModelsConstant } from '@/lib/constants/marketplaceConstants';
-import type { Prompt as PromptDataType } from '@/app/app/editor/page'; // Import the Prompt type
+import type { Prompt as PromptDataType } from '@/app/app/editor/page';
 
 interface ModelOption {
     id: string;
@@ -139,7 +139,23 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
 
     } catch (error) {
       console.error("Error refining prompt:", error);
-      const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during refinement.";
+      let errorMessage = "An unknown error occurred during refinement.";
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // Handle specific error cases
+      if (errorMessage.includes('401') || errorMessage.includes('Authentication')) {
+        errorMessage = "Please log in to use AI refinement.";
+      } else if (errorMessage.includes('403') || errorMessage.includes('premium')) {
+        errorMessage = "AI refinement requires a premium subscription.";
+      } else if (errorMessage.includes('404')) {
+        errorMessage = "AI service temporarily unavailable. Please try again.";
+      }
+      
       setRefineError(`Refinement failed: ${errorMessage}`);
 
       // Restore original content on error

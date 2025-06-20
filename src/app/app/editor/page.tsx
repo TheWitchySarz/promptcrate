@@ -113,14 +113,14 @@ function PromptEditorContent() {
     if (!searchParams) return;
     
     const title = searchParams.get('title');
-    const prompt = searchParams.get('prompt');
+    const content = searchParams.get('content') || searchParams.get('prompt'); // Support both parameter names
     const model = searchParams.get('model');
     
-    if (title || prompt || model) {
+    if (title || content || model) {
       setCurrentPrompt(prev => ({
         ...prev,
         title: title || prev.title,
-        content: prompt || prev.content,
+        content: content || prev.content,
         model: model || prev.model
       }));
     }
@@ -271,7 +271,7 @@ function PromptEditorContent() {
       
       <div className="flex h-[calc(100vh-64px)]">
         {/* Sidebar */}
-        <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-80'} flex-shrink-0`}>
+        <div className={`bg-gray-50 border-r border-gray-200 transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-80'} flex-shrink-0`}>
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
               {!sidebarCollapsed && (
@@ -288,7 +288,7 @@ function PromptEditorContent() {
           
           {!sidebarCollapsed && (
             <div className="p-4 space-y-3">
-              <button className="w-full flex items-center space-x-3 p-3 text-left bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition-colors">
+              <button className="w-full flex items-center space-x-3 p-3 text-left bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                 <Plus size={16} />
                 <span>New Prompt</span>
               </button>
@@ -331,6 +331,13 @@ function PromptEditorContent() {
               </div>
               
               <div className="flex items-center space-x-3">
+                <Link 
+                  href="/marketplace"
+                  className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <span className="text-sm">← Marketplace</span>
+                </Link>
+                
                 <button
                   onClick={() => setPreviewMode(!previewMode)}
                   className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
