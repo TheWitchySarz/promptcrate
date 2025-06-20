@@ -54,9 +54,6 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Ensure the app responds to health checks properly
-  experimental: {
-    outputStandalone: true,
-  },
   output: 'standalone',
   images: {
     domains: ['avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
