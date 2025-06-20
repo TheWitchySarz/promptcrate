@@ -105,7 +105,7 @@ const Navbar = () => {
             <li><Link href="/app/team-library" className="text-gray-900 hover:text-purple-400 transition-colors">Team Library</Link></li>
             <li><Link href="/app/analytics" className="text-gray-900 hover:text-purple-400 transition-colors">Analytics</Link></li>
             <li><Link href="/upload" className="text-gray-900 hover:text-purple-400 transition-colors">Upload Prompt</Link></li>
-            <li><Link href="/admin/console" className="text-gray-900 hover:text-purple-400 transition-colors">Admin Console</Link></li>
+            {/*<li><Link href="/admin/console" className="text-gray-900 hover:text-purple-400 transition-colors">Admin Console</Link></li>*/}
           </>
         )}
       </>
@@ -185,7 +185,7 @@ const Navbar = () => {
             <Link href="/app/team-library" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Team Library</Link>
             <Link href="/app/analytics" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Analytics</Link>
             <Link href="/upload" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Upload Prompt</Link>
-            <Link href="/admin/console" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Admin Console</Link>
+            {/*<Link href="/admin/console" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Admin Console</Link>*/}
           </>
         )}
       </>

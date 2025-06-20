@@ -42,6 +42,13 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    if (!isLoading && isLoggedIn) {
+      // Always redirect authenticated users to home, regardless of role
+      router.push('/home');
+    }
+  }, [isLoggedIn, isLoading, router]);
+
   const pricingPlans = [
     {
       name: 'Free',

@@ -28,6 +28,14 @@ interface AdminStats {
 export default function AdminDashboard() {
   const { isLoggedIn, isLoading, userRole } = useAuth();
   const router = useRouter();
+
+  // Redirect non-admin users
+  useEffect(() => {
+    if (!isLoading && (!isLoggedIn || userRole !== 'admin')) {
+      router.push('/home');
+      return;
+    }
+  }, [isLoggedIn, isLoading, userRole, router]);
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     activeSubscriptions: 0,
