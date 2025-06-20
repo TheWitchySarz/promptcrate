@@ -134,10 +134,22 @@ function PromptEditorContent() {
   }, [isLoggedIn, authLoading, router]);
 
   const handleSave = async () => {
+    if (!currentPrompt.title.trim()) {
+      alert('Please enter a title for your prompt.');
+      return;
+    }
+    if (!currentPrompt.content.trim()) {
+      alert('Please enter some prompt content.');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const response = await fetch('/api/prompts', {
-        method: 'POST',
+      const url = currentPrompt.id ? `/api/prompts/${currentPrompt.id}` : '/api/prompts';
+      const method = currentPrompt.id ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -159,8 +171,18 @@ function PromptEditorContent() {
       }
 
       const savedPrompt = await response.json();
-      setCurrentPrompt(prev => ({ ...prev, id: savedPrompt.id }));
-      console.log('Prompt saved successfully:', savedPrompt);
+      setCurrentPrompt(prev => ({ 
+        ...prev, 
+        id: savedPrompt.id,
+        created_at: savedPrompt.created_at,
+        updated_at: savedPrompt.updated_at
+      }));
+      
+      // Show success message
+      alert(currentPrompt.id ? 'Prompt updated successfully!' : 'Prompt saved successfully!');
+      
+      // Refresh prompts list if needed
+      loadPrompts();
     } catch (error) {
       console.error('Error saving prompt:', error);
       alert('Failed to save prompt: ' + (error as Error).message);
@@ -168,6 +190,26 @@ function PromptEditorContent() {
       setIsSaving(false);
     }
   };
+
+  // Function to load user's prompts
+  const loadPrompts = async () => {
+    try {
+      const response = await fetch('/api/prompts');
+      if (response.ok) {
+        const userPrompts = await response.json();
+        setPrompts(userPrompts);
+      }
+    } catch (error) {
+      console.error('Error loading prompts:', error);
+    }
+  };
+
+  // Load prompts on component mount
+  useEffect(() => {
+    if (isLoggedIn) {
+      loadPrompts();
+    }
+  }, [isLoggedIn]);
 
   const handleTest = async () => {
     if (!testInput.trim()) return;
@@ -311,18 +353,63 @@ function PromptEditorContent() {
           
           {!sidebarCollapsed && (
             <div className="p-4 space-y-3">
-              <button className="w-full flex items-center space-x-3 p-3 text-left bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+              <button 
+                onClick={() => {
+                  setCurrentPrompt(defaultPrompt);
+                }}
+                className="w-full flex items-center space-x-3 p-3 text-left bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+              >
                 <Plus size={16} />
                 <span>New Prompt</span>
               </button>
               
-              {/* Recent Prompts - Empty state for now */}
+              {/* Recent Prompts */}
               <div className="space-y-2">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Recent</p>
-                <div className="text-center py-8 px-4">
-                  <p className="text-sm text-gray-500">No recent prompts yet.</p>
-                  <p className="text-xs text-gray-400 mt-1">Create your first prompt to get started.</p>
-                </div>
+                {prompts.length === 0 ? (
+                  <div className="text-center py-8 px-4">
+                    <p className="text-sm text-gray-500">No recent prompts yet.</p>
+                    <p className="text-xs text-gray-400 mt-1">Create your first prompt to get started.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-1 max-h-96 overflow-y-auto">
+                    {prompts.slice(0, 10).map((prompt) => (
+                      <button
+                        key={prompt.id}
+                        onClick={() => {
+                          setCurrentPrompt({
+                            id: prompt.id,
+                            title: prompt.title,
+                            content: prompt.prompt_content || '',
+                            model: prompt.model || 'gpt-4-turbo',
+                            tags: prompt.tags || [],
+                            variables: prompt.variables || [],
+                            temperature: 0.7,
+                            maxTokens: 2048,
+                            topP: 1.0,
+                            frequencyPenalty: 0,
+                            presencePenalty: 0,
+                            visibility: prompt.is_public ? 'public' : 'private',
+                            version: prompt.version || 1,
+                            description: prompt.description || '',
+                            category: 'Marketing',
+                            created_at: prompt.created_at,
+                            updated_at: prompt.updated_at,
+                            user_id: prompt.user_id
+                          });
+                        }}
+                        className={`w-full text-left p-2 rounded-lg text-sm hover:bg-gray-100 transition-colors group ${
+                          currentPrompt.id === prompt.id ? 'bg-purple-50 text-purple-700' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="font-medium truncate">{prompt.title}</div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {new Date(prompt.updated_at || prompt.created_at).toLocaleDateString()}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -373,11 +460,16 @@ function PromptEditorContent() {
                 
                 <button
                   onClick={handleSave}
-                  disabled={isSaving}
+                  disabled={isSaving || !currentPrompt.title.trim() || !currentPrompt.content.trim()}
                   className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
                 >
                   {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                  <span className="text-sm">{isSaving ? 'Saving...' : 'Save'}</span>
+                  <span className="text-sm">
+                    {isSaving 
+                      ? (currentPrompt.id ? 'Updating...' : 'Saving...') 
+                      : (currentPrompt.id ? 'Update' : 'Save')
+                    }
+                  </span>
                 </button>
               </div>
             </div>
