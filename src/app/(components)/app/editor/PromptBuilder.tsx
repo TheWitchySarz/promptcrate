@@ -140,7 +140,7 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
           >
             {AI_MODELS.filter(model => model.id !== 'all').map((model) => (
               <option key={model.id} value={model.id}>
-                {model.name} {model.provider && `(${model.provider})`}
+                {model.name}
               </option>
             ))}
           </select>

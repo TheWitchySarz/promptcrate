@@ -293,19 +293,13 @@ function PromptEditorContent() {
                 <span>New Prompt</span>
               </button>
               
-              {/* Recent Prompts */}
+              {/* Recent Prompts - Empty state for now */}
               <div className="space-y-2">
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Recent</p>
-                {[
-                  { title: 'Email Marketing Template', updated: '2 hours ago' },
-                  { title: 'Code Review Assistant', updated: '1 day ago' },
-                  { title: 'Blog Post Generator', updated: '3 days ago' }
-                ].map((prompt, index) => (
-                  <div key={index} className="p-3 rounded-lg hover:bg-gray-50 cursor-pointer border border-gray-100">
-                    <p className="font-medium text-gray-900 text-sm truncate">{prompt.title}</p>
-                    <p className="text-xs text-gray-500">{prompt.updated}</p>
-                  </div>
-                ))}
+                <div className="text-center py-8 px-4">
+                  <p className="text-sm text-gray-500">No recent prompts yet.</p>
+                  <p className="text-xs text-gray-400 mt-1">Create your first prompt to get started.</p>
+                </div>
               </div>
             </div>
           )}
