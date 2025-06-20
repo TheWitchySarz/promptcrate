@@ -15,6 +15,7 @@ export interface Prompt {
   id: string | null;
   title: string;
   content: string;
+  prompt_content?: string; // For database compatibility
   model: string;
   tags: string[];
   variables: Array<{ name: string; type: string; description: string; defaultValue?: string }>;
@@ -380,7 +381,7 @@ function PromptEditorContent() {
                           setCurrentPrompt({
                             id: prompt.id,
                             title: prompt.title,
-                            content: prompt.prompt_content || '',
+                            content: prompt.prompt_content || prompt.content || '',
                             model: prompt.model || 'gpt-4-turbo',
                             tags: prompt.tags || [],
                             variables: prompt.variables || [],
