@@ -36,6 +36,12 @@ async function makeAdmin() {
     
     console.log(`Found auth user: ${authUser.id} - ${authUser.email}`);
     
+    // Extract username and full_name from user metadata or derive from email
+    const username = authUser.user_metadata?.username || authUser.email?.split('@')[0] || 'admin';
+    const fullName = authUser.user_metadata?.full_name || authUser.user_metadata?.username || authUser.email?.split('@')[0];
+    
+    console.log(`Using username: ${username}, full_name: ${fullName}`);
+    
     // Check if user exists in profiles table
     const { data: existingProfile, error: fetchError } = await supabase
       .from('profiles')
@@ -49,13 +55,14 @@ async function makeAdmin() {
     }
     
     if (existingProfile) {
-      // Update existing profile to pro plan (admin equivalent)
+      // Update existing profile to admin plan
       const { data, error } = await supabase
         .from('profiles')
         .update({ 
-          plan: 'admin', // Set to admin for admin privileges
+          plan: 'admin',
           email: email,
-          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0]
+          username: username,
+          full_name: fullName
         })
         .eq('id', authUser.id)
         .select();
@@ -67,14 +74,15 @@ async function makeAdmin() {
       
       console.log('✅ Successfully updated user to admin plan:', data[0]);
     } else {
-      // Create new profile record with pro plan
+      // Create new profile record with admin plan
       const { data, error } = await supabase
         .from('profiles')
         .insert([{
           id: authUser.id,
           email: email,
-          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
-          plan: 'admin' // Set to admin for admin privileges
+          username: username,
+          full_name: fullName,
+          plan: 'admin'
         }])
         .select();
       

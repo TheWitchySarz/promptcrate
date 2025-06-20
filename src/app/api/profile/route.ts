@@ -43,12 +43,17 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { full_name } = body;
+    const { full_name, username } = body;
+
+    // Prepare update object
+    const updateData: any = {};
+    if (full_name !== undefined) updateData.full_name = full_name;
+    if (username !== undefined) updateData.username = username;
 
     // Update user profile
     const { data, error } = await supabase
       .from('profiles')
-      .update({ full_name })
+      .update(updateData)
       .eq('id', user.id)
       .select()
       .single();
