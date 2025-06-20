@@ -89,7 +89,7 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
 
     // Store original content for potential restoration
     const originalContent = prompt_content;
-    
+
     setIsRefining(true);
     setRefineError(null);
     handlePromptContentChange('🔄 Analyzing and refining your prompt...'); // Show progress
@@ -118,15 +118,15 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let refinedContent = "";
-      
+
       // Clear the progress message
       handlePromptContentChange('');
-      
+
       // Stream the refined content
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        
+
         const chunk = decoder.decode(value, { stream: true });
         refinedContent += chunk;
         handlePromptContentChange(refinedContent);
@@ -141,7 +141,7 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
       console.error("Error refining prompt:", error);
       const errorMessage = error instanceof Error ? error.message : "An unknown error occurred during refinement.";
       setRefineError(`Refinement failed: ${errorMessage}`);
-      
+
       // Restore original content on error
       handlePromptContentChange(originalContent);
     } finally {
@@ -179,22 +179,36 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
         </select>
       </div>
 
-      {/* Prompt Textarea - dark background, light text */}
-      <div className="flex flex-col flex-grow min-h-[300px]">
-        <div className="flex items-center justify-between mb-1.5">
-            <label htmlFor="prompt-content" className="text-sm font-medium text-gray-300">Prompt Content</label>
-            <span title="Use {{curly_braces}} for variables. E.g., 'Translate {{text}} into {{language}}.'">
-              <Info size={16} className="text-gray-400 hover:text-gray-300 cursor-help" />
-            </span>
+      {/* Prompt Content Textarea - dark background, light text, flex-grow to fill available space */}
+      <div className="flex-grow flex flex-col min-h-0">
+        <div className="flex items-center justify-between mb-1">
+          <label htmlFor="prompt-content" className="block text-sm font-medium text-gray-300">
+            Prompt Content
+          </label>
+          {isPremiumUser && (
+            <button
+              type="button"
+              onClick={handleRefineWithAI}
+              disabled={isRefining || isSaving || !prompt_content || !prompt_content.trim()}
+              className="flex items-center space-x-1 px-2 py-1 text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isRefining ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Brain className="h-3 w-3" />
+              )}
+              <span>{isRefining ? 'Refining...' : 'AI Refine'}</span>
+            </button>
+          )}
         </div>
         <textarea 
-            id="prompt-content"
-            name="content"
-            value={prompt_content || ''} 
-            onChange={handleInputChange}
-            placeholder="Enter your AI prompt here…\nExample: Summarize the following text for a 5th grader: {{text_to_summarize}}"
-            className="flex-grow w-full p-3 bg-gray-700 text-gray-100 placeholder-gray-400 rounded-md border border-gray-600 focus:ring-1 focus:ring-purple-500 focus:border-purple-600 shadow-sm font-mono text-sm leading-relaxed resize-none outline-none disabled:opacity-50"
-            disabled={isSaving || isRefining}
+          id="prompt-content"
+          name="content"
+          value={prompt_content || ''} 
+          onChange={handleInputChange} 
+          placeholder="Enter your AI prompt here…\nExample: Summarize the following text for a 5th grader: {{text_to_summarize}}"
+          className="flex-grow w-full p-3 bg-gray-700 text-gray-100 placeholder-gray-400 rounded-md border border-gray-600 focus:ring-1 focus:ring-purple-500 focus:border-purple-600 shadow-sm font-mono text-sm leading-relaxed resize-none outline-none disabled:opacity-50"
+          disabled={isSaving || isRefining}
         />
         {refineError && <p className="text-red-400 text-xs mt-1 px-1">Error: {refineError}</p>}
       </div>
@@ -234,4 +248,4 @@ const PromptBuilder: React.FC<PromptBuilderProps> = ({
   );
 }
 
-export default PromptBuilder; 
+export default PromptBuilder;

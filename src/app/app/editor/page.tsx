@@ -176,15 +176,52 @@ function PromptEditorContent() {
   };
 
   const handleAIOptimize = async () => {
+    if (!currentPrompt.content.trim()) {
+      alert('Please enter some prompt content to optimize.');
+      return;
+    }
+
     setIsGenerating(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await fetch('/api/refine-prompt', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: currentPrompt.content,
+          model: currentPrompt.model,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      // Handle streaming response
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let optimizedContent = '';
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          optimizedContent += decoder.decode(value);
+        }
+      }
+
+      if (optimizedContent.trim()) {
+        setCurrentPrompt(prev => ({ ...prev, content: optimizedContent.trim() }));
+      } else {
+        throw new Error('No optimized content received');
+      }
       
-      const optimizedContent = currentPrompt.content + '\n\n[AI-optimized for better clarity and results]';
-      setCurrentPrompt(prev => ({ ...prev, content: optimizedContent }));
       setIsGenerating(false);
     } catch (error) {
       console.error('Error optimizing prompt:', error);
+      alert(`Failed to optimize prompt: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setIsGenerating(false);
     }
   };

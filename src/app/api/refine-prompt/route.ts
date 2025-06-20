@@ -68,8 +68,11 @@ export async function POST(req: NextRequest) {
     const isPremiumUser = userPlan === 'pro' || userPlan === 'enterprise';
 
     if (!isPremiumUser) {
-      console.log('Free user attempted to use AI feature');
-      return new Response(JSON.stringify({ error: 'This feature requires a premium subscription' }), {
+      console.log('Free user attempted to use AI feature:', { userId: user.id, plan: userPlan });
+      return new Response(JSON.stringify({ 
+        error: 'This feature requires a premium subscription',
+        details: { currentPlan: userPlan, userId: user.id }
+      }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },
       });
