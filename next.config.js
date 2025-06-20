@@ -68,7 +68,7 @@ const nextConfig = {
         has: [
           {
             type: 'host',
-            value: 'promptcrate.ai',
+            value: 'www.promptcrate.ai',
           },
         ],
         permanent: true,
