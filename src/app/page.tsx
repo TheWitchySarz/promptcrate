@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -92,7 +91,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="relative pt-20 pb-16 lg:pt-28 lg:pb-20">
         <div className="container mx-auto px-4 text-center">
@@ -106,19 +105,19 @@ export default function Home() {
               <Sparkles className="w-4 h-4 mr-2" />
               AI-Powered Prompt Engineering
             </Badge>
-            
+
             <h1 className="text-4xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
               Create, Share & Monetize
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 {" "}AI Prompts
               </span>
             </h1>
-            
+
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
               The ultimate platform for prompt engineers. Build powerful AI prompts, 
               share with the community, and earn from your creativity.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
               <Button 
                 size="lg" 
@@ -129,14 +128,14 @@ export default function Home() {
                 {isLoading ? 'Loading...' : 'Start Building Today'}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              
+
               <Link href="/marketplace">
                 <Button variant="outline" size="lg" className="px-8 py-4 text-lg font-semibold">
                   Explore Marketplace
                 </Button>
               </Link>
             </div>
-            
+
             <div className="flex items-center justify-center space-x-6 text-sm text-gray-500">
               <div className="flex items-center">
                 <Users className="w-4 h-4 mr-2" />
@@ -194,7 +193,7 @@ export default function Home() {
                       </Badge>
                     </div>
                   )}
-                  
+
                   <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
                     <div className="text-4xl font-bold text-gray-900 mb-2">
@@ -203,7 +202,7 @@ export default function Home() {
                     </div>
                     <CardDescription>{plan.description}</CardDescription>
                   </CardHeader>
-                  
+
                   <CardContent>
                     <ul className="space-y-3">
                       {plan.features.map((feature, featureIndex) => (
@@ -214,7 +213,7 @@ export default function Home() {
                       ))}
                     </ul>
                   </CardContent>
-                  
+
                   <CardFooter>
                     <Button 
                       className={`w-full ${plan.popular ? 'bg-purple-600 hover:bg-purple-700' : ''}`}

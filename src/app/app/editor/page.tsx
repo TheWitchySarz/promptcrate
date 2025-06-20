@@ -458,7 +458,9 @@ function PromptEditorContent() {
                       
                       <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
                         <span>{currentPrompt.content.length} characters</span>
-                        <span>~{Math.ceil(currentPrompt.content.length / 4)} tokens</span>
+                        {userRole === 'free' && (
+                          <span>~{Math.ceil(currentPrompt.content.length / 4)} tokens</span>
+                        )}
                       </div>
                     </div>
 
@@ -584,7 +586,9 @@ function PromptEditorContent() {
                           
                           <div className="flex justify-between items-center text-sm text-gray-500">
                             <span>Model: {selectedTestModel}</span>
-                            <span>Tokens: ~150 | Cost: ~$0.003</span>
+                            {userRole === 'free' && (
+                              <span>Tokens: ~150 | Cost: ~$0.003</span>
+                            )}
                           </div>
                         </div>
                       ) : (
@@ -611,8 +615,15 @@ function PromptEditorContent() {
                             </div>
                             <div className="text-sm text-gray-600 truncate">{result.output.substring(0, 100)}...</div>
                             <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-                              <span>{result.tokens} tokens</span>
-                              <span>${result.cost.toFixed(4)}</span>
+                              {userRole === 'free' && (
+                                <>
+                                  <span>{result.tokens} tokens</span>
+                                  <span>${result.cost.toFixed(4)}</span>
+                                </>
+                              )}
+                              {userRole !== 'free' && (
+                                <span>Model: {result.model}</span>
+                              )}
                             </div>
                           </div>
                         ))}
