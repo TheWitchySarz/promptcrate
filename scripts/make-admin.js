@@ -36,54 +36,54 @@ async function makeAdmin() {
     
     console.log(`Found auth user: ${authUser.id} - ${authUser.email}`);
     
-    // Check if user exists in users table
-    const { data: existingUser, error: fetchError } = await supabase
-      .from('users')
+    // Check if user exists in profiles table
+    const { data: existingProfile, error: fetchError } = await supabase
+      .from('profiles')
       .select('*')
       .eq('id', authUser.id)
       .maybeSingle();
     
     if (fetchError) {
-      console.error('Error fetching user from users table:', fetchError);
+      console.error('Error fetching user from profiles table:', fetchError);
       return;
     }
     
-    if (existingUser) {
-      // Update existing user to admin
+    if (existingProfile) {
+      // Update existing profile to pro plan (admin equivalent)
       const { data, error } = await supabase
-        .from('users')
+        .from('profiles')
         .update({ 
-          role: 'admin',
-          email: email // Ensure email is set
+          plan: 'pro', // Set to pro plan for admin privileges
+          email: email,
+          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0]
         })
         .eq('id', authUser.id)
         .select();
       
       if (error) {
-        console.error('Error updating user to admin:', error);
+        console.error('Error updating user to pro:', error);
         return;
       }
       
-      console.log('✅ Successfully updated user to admin:', data[0]);
+      console.log('✅ Successfully updated user to pro plan:', data[0]);
     } else {
-      // Create new user record with admin role
+      // Create new profile record with pro plan
       const { data, error } = await supabase
-        .from('users')
+        .from('profiles')
         .insert([{
           id: authUser.id,
           email: email,
-          name: authUser.user_metadata?.name || authUser.email?.split('@')[0],
-          role: 'admin',
-          plan: 'pro' // Give admin a pro plan
+          full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
+          plan: 'pro' // Set to pro plan for admin privileges
         }])
         .select();
       
       if (error) {
-        console.error('Error creating admin user:', error);
+        console.error('Error creating pro user profile:', error);
         return;
       }
       
-      console.log('✅ Successfully created admin user:', data[0]);
+      console.log('✅ Successfully created pro user profile:', data[0]);
     }
     
   } catch (error) {
