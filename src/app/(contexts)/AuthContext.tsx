@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Get the current session and user
     const { data: { session } } = await supabase.auth.getSession();
     const currentUser = session?.user ?? null;
-    
+
     // If there's a user, fetch their updated profile information
     if (currentUser) {
       await fetchUserProfileAndSetState(currentUser);
@@ -241,4 +241,4 @@ export const useAuth = () => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}; 
+};

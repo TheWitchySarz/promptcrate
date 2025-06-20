@@ -18,6 +18,13 @@ async function makeAdmin() {
   const email = 'annalealayton@gmail.com';
   
   try {
+    console.log('Refreshing schema cache...');
+    // Force schema refresh by making a simple query
+    await supabase.rpc('version');
+    
+    // Wait a moment for schema to refresh
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     // First, check if user exists in auth.users
     const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
     
