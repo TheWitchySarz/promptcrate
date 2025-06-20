@@ -390,7 +390,7 @@ function PromptEditorContent() {
                             topP: 1.0,
                             frequencyPenalty: 0,
                             presencePenalty: 0,
-                            visibility: prompt.is_public ? 'public' : 'private',
+                            visibility: prompt.visibility || 'private',
                             version: prompt.version || 1,
                             description: prompt.description || '',
                             category: 'Marketing',
