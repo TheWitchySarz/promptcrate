@@ -41,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const { data: profile, error } = await supabase
           .from('profiles')
-          .select('plan, username') // Fetch username along with plan
+          .select('plan, full_name') // Fetch full_name along with plan
           .eq('id', currentUser.id)
           .single();
 
@@ -51,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUsername(null);
         } else if (profile && profile.plan) {
           setUserRole(profile.plan as UserPlan); // Cast to UserPlan
-          setUsername(profile.username as string | null);
+          setUsername(profile.full_name as string | null);
         } else {
           console.warn('User profile not found or plan is missing, defaulting to free plan and null username.');
           setUserRole('free'); // Default if profile somehow doesn't exist or plan is null
