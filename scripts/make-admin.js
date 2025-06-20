@@ -53,7 +53,7 @@ async function makeAdmin() {
       const { data, error } = await supabase
         .from('profiles')
         .update({ 
-          plan: 'pro', // Set to pro plan for admin privileges
+          plan: 'admin', // Set to admin for admin privileges
           email: email,
           full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0]
         })
@@ -61,11 +61,11 @@ async function makeAdmin() {
         .select();
       
       if (error) {
-        console.error('Error updating user to pro:', error);
+        console.error('Error updating user to admin:', error);
         return;
       }
       
-      console.log('✅ Successfully updated user to pro plan:', data[0]);
+      console.log('✅ Successfully updated user to admin plan:', data[0]);
     } else {
       // Create new profile record with pro plan
       const { data, error } = await supabase
@@ -74,16 +74,16 @@ async function makeAdmin() {
           id: authUser.id,
           email: email,
           full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0],
-          plan: 'pro' // Set to pro plan for admin privileges
+          plan: 'admin' // Set to admin for admin privileges
         }])
         .select();
       
       if (error) {
-        console.error('Error creating pro user profile:', error);
+        console.error('Error creating admin user profile:', error);
         return;
       }
       
-      console.log('✅ Successfully created pro user profile:', data[0]);
+      console.log('✅ Successfully created admin user profile:', data[0]);
     }
     
   } catch (error) {

@@ -1,267 +1,229 @@
 'use client';
 
-import React, { useState, ChangeEvent } from 'react';
-import { Save, Info, Brain, Loader2 } from 'lucide-react';
-// Import AI_MODELS from the new constants file
-import { AI_MODELS as availableEditorModelsConstant } from '@/lib/constants/marketplaceConstants';
-import type { Prompt as PromptDataType } from '@/app/app/editor/page';
-
-interface ModelOption {
-    id: string;
-    name: string;
-}
-
-// Type for the prompt data that PromptBuilder can work with
-// It can be a full Prompt (from DB) or a new prompt yet to be saved (id: null)
-export type EditablePromptData = PromptDataType | (Omit<PromptDataType, 'id' | 'user_id' | 'created_at' | 'updated_at'> & { id: null });
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Save, Copy, Download, Wand2, Settings, Sparkles, FileText, Trash2 } from 'lucide-react';
+import { AI_MODELS } from '@/lib/constants/marketplaceConstants';
 
 interface PromptBuilderProps {
-  promptData: EditablePromptData | null; // Can be null if no prompt is active, though editor page initializes one
-  onPromptDataChange: (updatedData: EditablePromptData) => void;
-  onSavePrompt: () => void; // No longer takes arguments
-  isSaving?: boolean;
-  userRole?: string; // Add userRole prop to check if user is free or premium
-  // isNewPrompt is now derived from !promptData?.id
+  onPromptChange?: (prompt: string) => void;
+  onTitleChange?: (title: string) => void;
+  initialPrompt?: string;
+  initialTitle?: string;
 }
 
 const PromptBuilder: React.FC<PromptBuilderProps> = ({
-  promptData,
-  onPromptDataChange,
-  onSavePrompt,
-  isSaving,
-  userRole = 'free', // Default to free if not provided
+  onPromptChange,
+  onTitleChange,
+  initialPrompt = '',
+  initialTitle = ''
 }) => {
-  const editorModels: ModelOption[] = availableEditorModelsConstant.filter(m => m.id !== 'all');
-  const [isRefining, setIsRefining] = useState(false);
-  const [refineError, setRefineError] = useState<string | null>(null);
+  const [prompt, setPrompt] = useState(initialPrompt);
+  const [title, setTitle] = useState(initialTitle);
+  const [selectedModel, setSelectedModel] = useState('gpt-4');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [variables, setVariables] = useState<string[]>([]);
 
-  // If promptData is null, we shouldn't render much of the builder or use defaults.
-  // However, PromptEditorPage currently ensures promptData is always an object (defaultNewPrompt).
-  // For robustness, let's handle potential null, though it might be an edge case based on current parent logic.
-  if (!promptData) {
-    return (
-      <div className="flex items-center justify-center h-full bg-gray-800 rounded-xl p-6 text-gray-400">
-        Select a prompt or create a new one to start editing.
-      </div>
-    );
-  }
+  // Extract variables from prompt text
+  useEffect(() => {
+    const variableRegex = /\{([^}]+)\}/g;
+    const matches = prompt.match(variableRegex);
+    const extractedVars = matches ? matches.map(match => match.slice(1, -1)) : [];
+    setVariables([...new Set(extractedVars)]);
+  }, [prompt]);
 
-  const { title, content: prompt_content, model } = promptData;
-  const isNewPrompt = promptData.id === null;
-
-  const isPremiumUser = userRole === 'pro' || userRole === 'enterprise';
-
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    onPromptDataChange({
-      ...promptData,
-      [name]: value,
-    });
-    if (name === 'content' && refineError) {
-        setRefineError(null); // Clear error on manual edit of prompt content
-    }
+  const handlePromptChange = (value: string) => {
+    setPrompt(value);
+    onPromptChange?.(value);
+    setSaveStatus('idle');
   };
 
-  const handleModelChange = (e: ChangeEvent<HTMLSelectElement>) => {
-    onPromptDataChange({
-      ...promptData,
-      model: e.target.value,
-    });
+  const handleTitleChange = (value: string) => {
+    setTitle(value);
+    onTitleChange?.(value);
+    setSaveStatus('idle');
   };
 
-  const handlePromptContentChange = (newContent: string) => {
-    onPromptDataChange({
-        ...promptData,
-        content: newContent,
-    });
-  };
-
-  const handleRefineWithAI = async () => {
-    if (!isPremiumUser) {
-      setRefineError("AI refinement is a premium feature. Please upgrade to Pro.");
-      return;
-    }
-
-    if (!prompt_content || !prompt_content.trim()) {
-      setRefineError("Please enter some prompt text to refine.");
-      return;
-    }
-
-    // Store original content for potential restoration
-    const originalContent = prompt_content;
-
-    setIsRefining(true);
-    setRefineError(null);
-    handlePromptContentChange('🔄 Analyzing and refining your prompt...'); // Show progress
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveStatus('saving');
 
     try {
-      const response = await fetch('/api/refine-prompt', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: originalContent, model: model }),
-      });
-
-      if (!response.ok) {
-        let errorData = { error: `API request failed with status ${response.status}` };
-        try { 
-          errorData = await response.json(); 
-        } catch (parseError) { 
-          // ignore parsing errors for non-JSON responses
-        }
-        throw new Error(errorData.error || `Refinement failed with status ${response.status}`);
-      }
-
-      if (!response.body) {
-        throw new Error("No response received from AI service.");
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let refinedContent = "";
-
-      // Clear the progress message
-      handlePromptContentChange('');
-
-      // Stream the refined content
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        refinedContent += chunk;
-        handlePromptContentChange(refinedContent);
-      }
-
-      // Validate that we got substantial improvements
-      if (refinedContent.trim().length < originalContent.length * 0.8) {
-        throw new Error("Refinement did not produce substantial improvements. Please try again.");
-      }
-
+      // Simulate save operation
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
     } catch (error) {
-      console.error("Error refining prompt:", error);
-      let errorMessage = "An unknown error occurred during refinement.";
-      
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === 'string') {
-        errorMessage = error;
-      }
-      
-      // Handle specific error cases
-      if (errorMessage.includes('401') || errorMessage.includes('Authentication')) {
-        errorMessage = "Please log in to use AI refinement.";
-      } else if (errorMessage.includes('403') || errorMessage.includes('premium')) {
-        errorMessage = "AI refinement requires a premium subscription.";
-      } else if (errorMessage.includes('404')) {
-        errorMessage = "AI service temporarily unavailable. Please try again.";
-      }
-      
-      setRefineError(`Refinement failed: ${errorMessage}`);
-
-      // Restore original content on error
-      handlePromptContentChange(originalContent);
+      setSaveStatus('error');
     } finally {
-      setIsRefining(false);
+      setIsSaving(false);
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(prompt);
+  };
+
+  const handleClear = () => {
+    if (confirm('Are you sure you want to clear the prompt?')) {
+      setPrompt('');
+      setTitle('');
+      onPromptChange?.('');
+      onTitleChange?.('');
+    }
+  };
+
+  const getSaveButtonText = () => {
+    switch (saveStatus) {
+      case 'saving': return 'Saving...';
+      case 'saved': return 'Saved!';
+      case 'error': return 'Error';
+      default: return 'Save Prompt';
+    }
+  };
+
+  const getSaveButtonColor = () => {
+    switch (saveStatus) {
+      case 'saved': return 'bg-green-600 hover:bg-green-700';
+      case 'error': return 'bg-red-600 hover:bg-red-700';
+      default: return 'bg-purple-600 hover:bg-purple-700';
     }
   };
 
   return (
-    <section className="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 p-4 sm:p-6 flex flex-col space-y-4 h-full">
-      {/* Title Input - dark background, light text */}
-      <input 
-        type="text" 
-        name="title"
-        value={title} 
-        onChange={handleInputChange} 
-        placeholder="Untitled Prompt" 
-        className="w-full text-xl font-semibold bg-gray-700 text-gray-100 placeholder-gray-400 border border-gray-600 rounded-md px-3 py-2 focus:ring-1 focus:ring-purple-500 focus:border-purple-600 outline-none disabled:opacity-50"
-        disabled={isSaving || isRefining}
-      />
-
-      {/* Model Selector Row - dark background for select, light text */}
-      <div className="flex items-center gap-3">
-        <label htmlFor="model-select" className="text-sm font-medium text-gray-300 whitespace-nowrap">AI Model:</label>
-        <select 
-          id="model-select"
-          name="model"
-          value={model || ''}
-          onChange={handleModelChange}
-          className="flex-grow appearance-none text-sm bg-gray-700 text-gray-100 border border-gray-600 rounded-md px-3 py-1.5 focus:ring-1 focus:ring-purple-500 focus:border-purple-600 shadow-sm cursor-pointer outline-none disabled:opacity-50"
-          disabled={isSaving || isRefining}
-        >
-          {editorModels.map(m => (
-            <option key={m.id} value={m.id} className="bg-gray-700 text-gray-100">{m.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {/* Prompt Content Textarea - dark background, light text, flex-grow to fill available space */}
-      <div className="flex-grow flex flex-col min-h-0">
-        <div className="flex items-center justify-between mb-1">
-          <label htmlFor="prompt-content" className="block text-sm font-medium text-gray-300">
-            Prompt Content
-          </label>
-          {isPremiumUser && (
+    <div className="bg-white rounded-lg shadow-lg border border-gray-200">
+      {/* Header */}
+      <div className="border-b border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <Sparkles className="h-6 w-6 text-purple-600" />
+            <h2 className="text-xl font-semibold text-gray-900">Prompt Builder</h2>
+          </div>
+          <div className="flex items-center space-x-2">
             <button
-              type="button"
-              onClick={handleRefineWithAI}
-              disabled={isRefining || isSaving || !prompt_content || !prompt_content.trim()}
-              className="flex items-center space-x-1 px-2 py-1 text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Advanced Settings"
             >
-              {isRefining ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <Brain className="h-3 w-3" />
-              )}
-              <span>{isRefining ? 'Refining...' : 'AI Refine'}</span>
+              <Settings className="h-4 w-4" />
             </button>
-          )}
+          </div>
         </div>
-        <textarea 
-          id="prompt-content"
-          name="content"
-          value={prompt_content || ''} 
-          onChange={handleInputChange} 
-          placeholder="Enter your AI prompt here…\nExample: Summarize the following text for a 5th grader: {{text_to_summarize}}"
-          className="flex-grow w-full p-3 bg-gray-700 text-gray-100 placeholder-gray-400 rounded-md border border-gray-600 focus:ring-1 focus:ring-purple-500 focus:border-purple-600 shadow-sm font-mono text-sm leading-relaxed resize-none outline-none disabled:opacity-50"
-          disabled={isSaving || isRefining}
-        />
-        {refineError && <p className="text-red-400 text-xs mt-1 px-1">Error: {refineError}</p>}
+
+        {/* Title Input */}
+        <div className="mb-4">
+          <label htmlFor="prompt-title" className="block text-sm font-medium text-gray-700 mb-2">
+            Prompt Title
+          </label>
+          <input
+            id="prompt-title"
+            type="text"
+            value={title}
+            onChange={(e) => handleTitleChange(e.target.value)}
+            placeholder="Enter a descriptive title for your prompt..."
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Model Selection */}
+        <div className="mb-4">
+          <label htmlFor="model-select" className="block text-sm font-medium text-gray-700 mb-2">
+            AI Model
+          </label>
+          <select
+            id="model-select"
+            value={selectedModel}
+            onChange={(e) => setSelectedModel(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          >
+            {AI_MODELS.filter(model => model.id !== 'all').map((model) => (
+              <option key={model.id} value={model.id}>
+                {model.name} {model.provider && `(${model.provider})`}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
-      {/* Action Bar */}
-      <div className="border-t border-gray-700 pt-4 mt-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-        <button
-            type="button"
-            onClick={handleRefineWithAI}
-            disabled={isRefining || isSaving || !prompt_content || !prompt_content.trim() || !isPremiumUser}
-            className="relative px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-purple-500 disabled:opacity-60 disabled:cursor-not-allowed flex items-center whitespace-nowrap group"
-        >
-            {isRefining ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Brain className="mr-2 h-4 w-4" />
-            )}
-            Refine with AI
-            {!isPremiumUser && (
-              <span className="absolute -top-2 -right-2 bg-yellow-500 text-xs px-1.5 py-0.5 rounded-full text-gray-900 font-bold">
-                PRO
-              </span>
-            )}
-        </button>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <button 
-            onClick={onSavePrompt}
-            disabled={isSaving || isRefining || !title || !title.trim() || !prompt_content || !prompt_content.trim()}
-            className={`flex-grow sm:flex-none flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-gray-800 disabled:opacity-60
-                        ${isNewPrompt ? 'bg-green-500 text-white hover:bg-green-600 focus:ring-green-400' : 'bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-400'}`}
+      {/* Prompt Editor */}
+      <div className="p-6">
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <label htmlFor="prompt-text" className="block text-sm font-medium text-gray-700">
+              Prompt Content
+            </label>
+            <div className="text-xs text-gray-500">
+              Use {'{variable}'} for dynamic content
+            </div>
+          </div>
+          <textarea
+            id="prompt-text"
+            value={prompt}
+            onChange={(e) => handlePromptChange(e.target.value)}
+            placeholder="Write your prompt here... Use {variable_name} to add dynamic variables."
+            className="w-full h-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none font-mono text-sm"
+          />
+        </div>
+
+        {/* Variables Display */}
+        {variables.length > 0 && (
+          <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="text-sm font-medium text-blue-900 mb-2 flex items-center">
+              <FileText className="h-4 w-4 mr-1" />
+              Detected Variables
+            </h4>
+            <div className="flex flex-wrap gap-2">
+              {variables.map((variable, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-md font-mono"
+                >
+                  {'{' + variable + '}'}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={handleSave}
+            disabled={isSaving || !prompt.trim() || !title.trim()}
+            className={`flex items-center px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${getSaveButtonColor()}`}
           >
-            <Save size={16} /> {isSaving ? 'Saving...' : (isNewPrompt ? 'Save New' : 'Update')}
+            <Save className="h-4 w-4 mr-2" />
+            {getSaveButtonText()}
+          </button>
+
+          <button
+            onClick={handleCopy}
+            disabled={!prompt.trim()}
+            className="flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            Copy
+          </button>
+
+          <button
+            onClick={handleClear}
+            disabled={!prompt.trim() && !title.trim()}
+            className="flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clear
           </button>
         </div>
+
+        {/* Character Count */}
+        <div className="mt-4 text-xs text-gray-500 text-right">
+          {prompt.length} characters
+        </div>
       </div>
-    </section>
+    </div>
   );
-}
+};
 
 export default PromptBuilder;

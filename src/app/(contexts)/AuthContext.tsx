@@ -5,7 +5,7 @@ import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client'; // Corrected path based on where we created it
 
 // Type for user plan, e.g., 'free', 'pro'. Could be extended.
-type UserPlan = 'free' | 'pro' | 'enterprise' | null; // Refined to specific plan strings
+type UserPlan = 'free' | 'pro' | 'enterprise' | 'admin' | null; // Refined to specific plan strings
 
 interface AuthContextType {
   isLoading: boolean;
