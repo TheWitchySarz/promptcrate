@@ -405,7 +405,10 @@ function PromptEditorContent() {
                       >
                         <div className="font-medium truncate">{prompt.title}</div>
                         <div className="text-xs text-gray-500 mt-1">
-                          {new Date(prompt.updated_at || prompt.created_at || new Date()).toLocaleDateString()}
+                          {(prompt.updated_at || prompt.created_at) 
+                            ? new Date(prompt.updated_at || prompt.created_at).toLocaleDateString()
+                            : 'No date available'
+                          }
                         </div>
                       </button>
                     ))}
