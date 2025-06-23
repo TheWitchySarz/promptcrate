@@ -34,6 +34,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     console.log('User metadata:', user?.user_metadata);
     console.log('Profile data:', profile);
 
+    // For annalealayton@gmail.com, always return admin (highest priority)
+    if (user?.email === 'annalealayton@gmail.com') {
+      console.log('Force admin role for annalealayton@gmail.com');
+      return 'admin';
+    }
+
     // Check user metadata first (most reliable)
     if (user?.user_metadata?.role === 'admin') {
       console.log('Using admin role from user metadata');
@@ -43,12 +49,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Check profile plan as backup
     if (profile?.plan === 'admin') {
       console.log('Using admin role from profile plan');
-      return 'admin';
-    }
-
-    // For annalealayton@gmail.com, force admin role as fallback
-    if (user?.email === 'annalealayton@gmail.com') {
-      console.log('Force admin role for annalealayton@gmail.com');
       return 'admin';
     }
 
