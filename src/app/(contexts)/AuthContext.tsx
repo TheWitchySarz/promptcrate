@@ -249,7 +249,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (event === 'SIGNED_IN' && session?.user) {
         console.log('User signed in:', session?.user?.id, session?.user?.email);
         setUser(session.user);
-        setIsLoggedIn(true);
 
         // For admin user, set role directly from metadata if profile fetch fails
         if (session.user.email === 'annalealayton@gmail.com' || session.user.user_metadata?.role === 'admin') {
@@ -263,7 +262,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(null);
         setUserRole(null);
         setUsername(null);
-        setIsLoggedIn(false);
       }
 
       setIsLoading(false);
