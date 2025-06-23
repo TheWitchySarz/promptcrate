@@ -75,6 +75,7 @@ const Navbar = () => {
       <>
         <li><Link href={homeHref} className="text-gray-900 hover:text-purple-400 transition-colors">Home</Link></li>
         <li><Link href="/features" className="text-gray-900 hover:text-purple-400 transition-colors">Features</Link></li>
+        <li><Link href="/blog" className="text-gray-900 hover:text-purple-400 transition-colors">Blog</Link></li>
         <li>
           <Link 
             href="/app/editor" 
@@ -159,6 +160,7 @@ const Navbar = () => {
       <>
         <Link href={homeHref} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Home</Link>
         <Link href="/features" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Features</Link>
+        <Link href="/blog" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Blog</Link>
         <Link 
           href="/app/editor" 
           className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50"
