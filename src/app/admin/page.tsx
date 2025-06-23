@@ -44,7 +44,7 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Check if user is admin by email, role, or user metadata
+      // Check if user is admin by email, role, or user metadata - be more permissive
       const isAdmin = userRole === 'admin' || 
                      user?.email === 'annalealayton@gmail.com' || 
                      user?.user_metadata?.role === 'admin';
@@ -56,13 +56,17 @@ export default function AdminDashboard() {
         isAdmin
       });
 
-      if (!isAdmin) {
+      // Only redirect if we're sure the user is NOT admin
+      // Don't redirect if userRole is still loading (null) for admin emails
+      if (!isAdmin && userRole !== null) {
         console.log('Redirecting non-admin user. Role:', userRole, 'Logged in:', !!user);
         router.push('/home');
         return;
       }
 
-      console.log('Admin access granted for:', user.email);
+      if (isAdmin) {
+        console.log('Admin access granted for:', user.email);
+      }
     }
   }, [user, userRole, isLoading, router]);
 
@@ -101,12 +105,13 @@ export default function AdminDashboard() {
     );
   }
 
-  // Show unauthorized if not admin
+  // Show unauthorized if not admin - but be permissive during loading
   const isAdmin = userRole === 'admin' || 
                  user?.email === 'annalealayton@gmail.com' || 
                  user?.user_metadata?.role === 'admin';
                  
-  if (!isLoggedIn || !isAdmin) {
+  // Don't show unauthorized if we're still loading or if user is admin by email
+  if (!isLoggedIn || (!isAdmin && userRole !== null && user?.email !== 'annalealayton@gmail.com')) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Navbar />

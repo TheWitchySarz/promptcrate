@@ -29,7 +29,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userRole, setUserRole] = useState<UserPlan>(null); // Stores the user's plan
   const [username, setUsername] = useState<string | null>(null); // Added username state
 
-  const getUserRole = (user: any, profile: any) => {
+  const getUserRole = (user: any, profile: any): UserPlan => {
     console.log('Getting user role for:', user?.id);
     console.log('User metadata:', user?.user_metadata);
     console.log('Profile data:', profile);
@@ -52,8 +52,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return 'admin';
     }
 
-    console.log('Defaulting to basic role');
-    return 'basic';
+    console.log('Defaulting to free role');
+    return 'free';
   };
 
   const createUserProfile = async (user: any) => {
@@ -126,19 +126,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error('Error fetching profile:', error);
-        setUserRole(null);
-        setUsername(null);
+        // Don't set role to null - determine from user metadata
+        const currentUser = user || (await supabase.auth.getUser()).data.user;
+        if (currentUser) {
+          const adminRole = getUserRole(currentUser, null);
+          console.log('Using fallback role after profile error:', adminRole);
+          setUserRole(adminRole);
+          setUsername(currentUser.email?.split('@')[0] || null);
+        }
         return;
       }
 
       if (!profile) {
         console.log('No profile found for user:', userId);
-        // Don't try to create profile here - it should already exist from scripts
-        // Instead, check user metadata for role
-        const userRole = user?.user_metadata?.role || 'free';
-        console.log('Using role from user metadata:', userRole);
-        setUserRole(userRole);
-        setUsername(user?.email?.split('@')[0] || null); // set username based on email
+        // Get current user and determine role from metadata
+        const currentUser = user || (await supabase.auth.getUser()).data.user;
+        if (currentUser) {
+          const adminRole = getUserRole(currentUser, null);
+          console.log('Using role from user metadata (no profile):', adminRole);
+          setUserRole(adminRole);
+          setUsername(currentUser.email?.split('@')[0] || null);
+          
+          // Try to create profile for future use
+          try {
+            const profileData = {
+              id: currentUser.id,
+              email: currentUser.email,
+              username: currentUser.email?.split('@')[0] || 'user',
+              full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User',
+              plan: adminRole,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            };
+            
+            console.log('Creating missing profile:', profileData);
+            await supabase.from('profiles').upsert(profileData, { onConflict: 'id' });
+          } catch (createError) {
+            console.error('Failed to create profile:', createError);
+          }
+        }
         return;
       }
 
@@ -148,8 +174,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
-      setUserRole(null);
-      setUsername(null);
+      // Don't set role to null - determine from user metadata as fallback
+      const currentUser = user || (await supabase.auth.getUser()).data.user;
+      if (currentUser) {
+        const adminRole = getUserRole(currentUser, null);
+        console.log('Using fallback role after fetch error:', adminRole);
+        setUserRole(adminRole);
+        setUsername(currentUser.email?.split('@')[0] || null);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -250,21 +282,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         console.log('User signed in:', session?.user?.id, session?.user?.email);
         setUser(session.user);
 
-        // For admin user, set role directly from metadata if profile fetch fails
-        if (session.user.email === 'annalealayton@gmail.com' || session.user.user_metadata?.role === 'admin') {
-          console.log('Admin user detected, setting admin role');
-          setUserRole('admin');
-        }
+        // Determine role immediately using getUserRole function
+        const immediateRole = getUserRole(session.user, null);
+        console.log('Setting immediate role:', immediateRole);
+        setUserRole(immediateRole);
 
+        // Fetch profile to update with any additional data, but don't let it override admin role
         await fetchUserProfile(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         console.log('User signed out');
         setUser(null);
         setUserRole(null);
         setUsername(null);
+        setIsLoading(false);
       }
-
-      setIsLoading(false);
     });
 
     return () => {
