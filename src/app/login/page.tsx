@@ -35,7 +35,7 @@ function LoginContent() {
       if (redirectTo && redirectTo.startsWith('/')) {
         router.push(redirectTo);
       } else {
-        router.push('/app/editor');
+        router.push('/home');
       }
     }
   }, [isLoggedIn, authIsLoading, router, searchParams]);
