@@ -279,19 +279,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           setUser(user);
           setUserRole(role);
-          setProfile(userProfile);
+          setUsername(userProfile?.username || user.email?.split('@')[0] || null);
         } else {
           console.log('Current user role:', null);
           console.log('Is logged in:', false);
           setUser(null);
           setUserRole(null);
-          setProfile(null);
+          setUsername(null);
         }
       } catch (error) {
         console.error('Error loading user:', error);
         setUser(null);
         setUserRole(null);
-        setProfile(null);
+        setUsername(null);
       } finally {
         if (mounted) {
           setIsLoading(false);
@@ -340,12 +340,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         setUser(user);
         setUserRole(role);
-        setProfile(userProfile);
+        setUsername(userProfile?.username || user.email?.split('@')[0] || null);
       } else if (event === 'SIGNED_OUT') {
         console.log('User signed out');
         setUser(null);
         setUserRole(null);
-        setProfile(null);
+        setUsername(null);
       }
 
       setIsLoading(false);
