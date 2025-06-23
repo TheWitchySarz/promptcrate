@@ -113,107 +113,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Function to fetch user profile and update state
-  const fetchUserProfileAndSetState = async (currentUser: SupabaseUser | null) => {
-    // Ensure isLoading is true if we are about to fetch profile data
-    // This is important if this function is called directly or by an event
-    // and we need to show a loading state.
-    // However, the main setIsLoading(true) should be at the start of an auth flow.
-    // setIsLoading(true); // Consider if needed here or if callers handle it.
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      console.log('Fetching profile for user:', userId);
 
-    if (currentUser) {
-      try {
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('plan, full_name, username') // Fetch username along with plan and full_name
-          .eq('id', currentUser.id)
-          .maybeSingle(); // Use maybeSingle instead of single to handle no rows
+      // First try to get the profile with proper error handling
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle(); // Use maybeSingle instead of single to avoid throwing on no results
 
-        if (error) {
-          console.error('Error fetching user profile:', error);
-          // Check if user has admin role in metadata as fallback
-          const userMetadataRole = currentUser.user_metadata?.role;
-          if (userMetadataRole === 'admin') {
-            setUserRole('admin');
-          } else {
-            setUserRole('free'); // Default to 'free' on error or if profile not found
-          }
-          setUsername(null);
-        } else if (profile && profile.plan) {
-          setUserRole(profile.plan as UserPlan); // Cast to UserPlan
-          setUsername(profile.username as string | null); // Use username field instead of full_name
-        } else {
-          // Check user metadata for admin role as fallback
-          const userMetadataRole = currentUser.user_metadata?.role;
-          if (userMetadataRole === 'admin') {
-            console.log('Using admin role from user metadata');
-            setUserRole('admin');
-            setUsername(currentUser.email?.split('@')[0] || null);
-          } else {
-          console.warn('User profile not found, creating default profile...');
-
-          // Wait a moment for auth session to be fully established
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-          // Try to create a default profile for the user
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .upsert({
-              id: currentUser.id,
-              email: currentUser.email,
-              username: currentUser.email?.split('@')[0] || 'user',
-              full_name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'User',
-              plan: 'free',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-          if (createError) {
-            console.error('Error creating default profile:', createError);
-            // If profile creation fails, set defaults but don't prevent login
-            setUserRole('free');
-            setUsername(currentUser.email?.split('@')[0] || null);
-
-            // Try one more time with a simple insert
-            setTimeout(async () => {
-              console.log('Retrying profile creation...');
-              const { error: retryError } = await supabase
-                .from('profiles')
-                .insert({
-                  id: currentUser.id,
-                  email: currentUser.email,
-                  username: currentUser.email?.split('@')[0] || 'user',
-                  full_name: currentUser.email?.split('@')[0] || 'User',
-                  plan: 'free'
-                });
-
-              if (!retryError) {
-                console.log('✅ Profile created on retry');
-                // Refresh the auth status to get the new profile
-                setTimeout(() => refreshAuthStatus(), 500);
-              }
-            }, 2000);
-          } else {
-            setUserRole(newProfile.plan as UserPlan);
-            setUsername(newProfile.username as string | null);
-            console.log('✅ Created default profile for user');
-          }
-          }
-        }
-      } catch (e) {
-        console.error('Exception fetching user profile:', e);
-        setUserRole('free');
+      if (error) {
+        console.error('Error fetching profile:', error);
+        setUserRole(null);
         setUsername(null);
+        return;
       }
-    } else {
+
+      if (!profile) {
+        console.log('No profile found for user:', userId);
+        // Don't try to create profile here - it should already exist from scripts
+        // Instead, check user metadata for role
+        const userRole = user?.user_metadata?.role || 'free';
+        console.log('Using role from user metadata:', userRole);
+        setUserRole(userRole);
+        setUsername(user?.email?.split('@')[0] || null); // set username based on email
+        return;
+      }
+
+      console.log('Profile fetched successfully:', profile);
+      setUserRole(profile.plan as UserPlan);
+      setUsername(profile.username as string | null);
+
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
       setUserRole(null);
       setUsername(null);
+    } finally {
+      setIsLoading(false);
     }
-    // This is the most reliable place to set isLoading to false,
-    // after user state and profile are processed.
-    setIsLoading(false); 
   };
 
   // Add refreshAuthStatus function to allow refreshing profile data
@@ -226,7 +165,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // If there's a user, fetch their updated profile information
     if (currentUser) {
-      await fetchUserProfileAndSetState(currentUser);
+      await fetchUserProfile(currentUser.id);
       console.log('Auth status refreshed.');
     } else {
       setUserRole(null);
@@ -249,37 +188,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.log('User found:', user.id, user.email);
 
           // Get or create profile
-          let userProfile = null;
+          // let userProfile = null;
 
-          try {
-            const { data: profile, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', user.id)
-              .maybeSingle();
+          // try {
+          //   const { data: profile, error: profileError } = await supabase
+          //     .from('profiles')
+          //     .select('*')
+          //     .eq('id', user.id)
+          //     .maybeSingle();
 
-            if (profileError && profileError.code !== 'PGRST116') {
-              console.error('Error fetching profile:', profileError);
-              userProfile = await createUserProfile(user);
-            } else if (!profile) {
-              console.log('No profile found, creating...');
-              userProfile = await createUserProfile(user);
-            } else {
-              userProfile = profile;
-            }
-          } catch (error) {
-            console.error('Error with profile:', error);
-            userProfile = await createUserProfile(user);
-          }
+          //   if (profileError && profileError.code !== 'PGRST116') {
+          //     console.error('Error fetching profile:', profileError);
+          //     userProfile = await createUserProfile(user);
+          //   } else if (!profile) {
+          //     console.log('No profile found, creating...');
+          //     userProfile = await createUserProfile(user);
+          //   } else {
+          //     userProfile = profile;
+          //   }
+          // } catch (error) {
+          //   console.error('Error with profile:', error);
+          //   userProfile = await createUserProfile(user);
+          // }
 
-          const role = getUserRole(user, userProfile);
-          console.log('Current user role:', role);
-          console.log('Is logged in:', true);
-          console.log('User:', user.email);
+          // const role = getUserRole(user, userProfile);
+          // console.log('Current user role:', role);
+          // console.log('Is logged in:', true);
+          // console.log('User:', user.email);
 
           setUser(user);
-          setUserRole(role);
-          setUsername(userProfile?.username || user.email?.split('@')[0] || null);
+          // setUserRole(role);
+          // setUsername(userProfile?.username || user.email?.split('@')[0] || null);
+          await fetchUserProfile(user.id);
         } else {
           console.log('Current user role:', null);
           console.log('Is logged in:', false);
@@ -307,45 +247,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.log('Auth state changed:', event, session?.user?.email);
 
       if (event === 'SIGNED_IN' && session?.user) {
-        const user = session.user;
-        console.log('User signed in:', user.id, user.email);
+        console.log('User signed in:', session?.user?.id, session?.user?.email);
+        setUser(session.user);
+        setIsLoggedIn(true);
 
-        // Get or create profile
-        let userProfile = null;
-
-        try {
-          const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .maybeSingle();
-
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error('Error fetching profile:', profileError);
-            userProfile = await createUserProfile(user);
-          } else if (!profile) {
-            console.log('No profile found, creating...');
-            userProfile = await createUserProfile(user);
-          } else {
-            userProfile = profile;
-          }
-        } catch (error) {
-          console.error('Error with profile on sign in:', error);
-          userProfile = await createUserProfile(user);
+        // For admin user, set role directly from metadata if profile fetch fails
+        if (session.user.email === 'annalealayton@gmail.com' || session.user.user_metadata?.role === 'admin') {
+          console.log('Admin user detected, setting admin role');
+          setUserRole('admin');
         }
 
-        const role = getUserRole(user, userProfile);
-        console.log('Current user role:', role);
-        console.log('User:', user.email);
-
-        setUser(user);
-        setUserRole(role);
-        setUsername(userProfile?.username || user.email?.split('@')[0] || null);
+        await fetchUserProfile(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         console.log('User signed out');
         setUser(null);
         setUserRole(null);
         setUsername(null);
+        setIsLoggedIn(false);
       }
 
       setIsLoading(false);

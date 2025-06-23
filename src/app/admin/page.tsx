@@ -44,8 +44,17 @@ export default function AdminDashboard() {
         return;
       }
 
-      // Check if user is admin by email or role
-      const isAdmin = userRole === 'admin' || user?.email === 'annalealayton@gmail.com' || user?.user_metadata?.role === 'admin';
+      // Check if user is admin by email, role, or user metadata
+      const isAdmin = userRole === 'admin' || 
+                     user?.email === 'annalealayton@gmail.com' || 
+                     user?.user_metadata?.role === 'admin';
+
+      console.log('Admin check:', {
+        userRole,
+        email: user?.email,
+        userMetadataRole: user?.user_metadata?.role,
+        isAdmin
+      });
 
       if (!isAdmin) {
         console.log('Redirecting non-admin user. Role:', userRole, 'Logged in:', !!user);
@@ -93,7 +102,11 @@ export default function AdminDashboard() {
   }
 
   // Show unauthorized if not admin
-  if (!isLoggedIn || userRole !== 'admin') {
+  const isAdmin = userRole === 'admin' || 
+                 user?.email === 'annalealayton@gmail.com' || 
+                 user?.user_metadata?.role === 'admin';
+                 
+  if (!isLoggedIn || !isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col">
         <Navbar />
