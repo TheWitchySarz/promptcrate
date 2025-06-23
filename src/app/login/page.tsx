@@ -30,9 +30,10 @@ function LoginContent() {
   const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isLoggedIn && !authIsLoading && searchParams) {
-      const redirectTo = searchParams.get('redirect_to');
-      if (redirectTo && redirectTo.startsWith('/')) {
+    if (isLoggedIn && !authIsLoading) {
+      // Always redirect to /home by default
+      const redirectTo = searchParams?.get('redirect_to');
+      if (redirectTo && redirectTo.startsWith('/') && redirectTo !== '/login') {
         router.push(redirectTo);
       } else {
         router.push('/home');

@@ -47,12 +47,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) {
           console.error('Error fetching user profile:', error);
-          setUserRole('free'); // Default to 'free' on error or if profile not found
+          // Check if user has admin role in metadata as fallback
+          const userMetadataRole = currentUser.user_metadata?.role;
+          if (userMetadataRole === 'admin') {
+            setUserRole('admin');
+          } else {
+            setUserRole('free'); // Default to 'free' on error or if profile not found
+          }
           setUsername(null);
         } else if (profile && profile.plan) {
           setUserRole(profile.plan as UserPlan); // Cast to UserPlan
           setUsername(profile.username as string | null); // Use username field instead of full_name
         } else {
+          // Check user metadata for admin role as fallback
+          const userMetadataRole = currentUser.user_metadata?.role;
+          if (userMetadataRole === 'admin') {
+            console.log('Using admin role from user metadata');
+            setUserRole('admin');
+            setUsername(currentUser.email?.split('@')[0] || null);
+          } else {
           console.warn('User profile not found, creating default profile...');
 
           // Wait a moment for auth session to be fully established
@@ -102,6 +115,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setUserRole(newProfile.plan as UserPlan);
             setUsername(newProfile.username as string | null);
             console.log('✅ Created default profile for user');
+          }
           }
         }
       } catch (e) {
