@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -26,16 +25,8 @@ interface AdminStats {
 }
 
 export default function AdminDashboard() {
-  const { isLoggedIn, isLoading, userRole } = useAuth();
+  const { user, userRole, isLoading, refreshAuthStatus } = useAuth();
   const router = useRouter();
-
-  // Redirect non-admin users
-  useEffect(() => {
-    if (!isLoading && (!isLoggedIn || userRole !== 'admin')) {
-      router.push('/home');
-      return;
-    }
-  }, [isLoggedIn, isLoading, userRole, router]);
   const [stats, setStats] = useState<AdminStats>({
     totalUsers: 0,
     activeSubscriptions: 0,
@@ -43,12 +34,35 @@ export default function AdminDashboard() {
     monthlyRevenue: 0,
     recentContacts: 0
   });
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Function to handle profile refresh
+  const handleRefreshProfile = async () => {
+    setIsRefreshing(true);
+    try {
+      await refreshAuthStatus();
+      console.log('Profile refreshed, new role:', userRole);
+    } catch (error) {
+      console.error('Error refreshing profile:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    if (!isLoading && (!isLoggedIn || userRole !== 'admin')) {
-      router.push("/login?message=Admin access required.");
-    }
-  }, [isLoggedIn, isLoading, userRole, router]);
+    // Don't redirect immediately - give time for auth to load
+    const timeoutId = setTimeout(() => {
+      if (!isLoading && !isRefreshing && (!user || userRole !== 'admin')) {
+        // Only redirect if we're sure the user isn't admin
+        if (user && userRole !== null && userRole !== 'admin') {
+          router.push('/login');
+        }
+      }
+    }, 1000); // Wait 1 second for auth to settle
+
+    return () => clearTimeout(timeoutId);
+  }, [user, userRole, isLoading, isRefreshing, router]);
 
   useEffect(() => {
     if (userRole === 'admin') {
@@ -68,7 +82,7 @@ export default function AdminDashboard() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isRefreshing) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />
@@ -84,16 +98,53 @@ export default function AdminDashboard() {
   console.log('Current user role:', userRole);
   console.log('Is logged in:', isLoggedIn);
 
-  if (!isLoggedIn || userRole !== 'admin') {
+  // Show access denied with option to refresh profile
+  if (!user || (userRole !== 'admin' && userRole !== null)) {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-grow flex items-center justify-center bg-gray-50">
           <div className="text-center">
-            <p className="text-gray-700 mb-4">Access Denied</p>
-            <p className="text-sm text-gray-500">Current role: {userRole || 'null'}</p>
-            <p className="text-sm text-gray-500">Logged in: {isLoggedIn ? 'Yes' : 'No'}</p>
-            <p className="text-sm text-gray-500">Required: admin</p>
+            <h1 className="text-2xl font-bold text-red-600 mb-4">Access Denied</h1>
+            <div className="space-y-2 text-gray-600 mb-6">
+              <p className="text-sm text-gray-500">Current role: {userRole || 'null'}</p>
+              <p className="text-sm text-gray-500">Logged in: {user ? 'Yes' : 'No'}</p>
+              <p className="text-sm text-gray-500">User ID: {user?.id || 'None'}</p>
+              <p className="text-sm text-gray-500">Email: {user?.email || 'None'}</p>
+              <p className="text-sm text-gray-500">Required: admin</p>
+            </div>
+            {user && (
+              <button
+                onClick={handleRefreshProfile}
+                disabled={isRefreshing}
+                className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+              >
+                {isRefreshing ? 'Refreshing...' : 'Refresh Profile'}
+              </button>
+            )}
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // If userRole is still null but user exists, show loading state
+  if (user && userRole === null) {
+    return (
+      <div className="flex flex-col min-h-screen">
+        <Navbar />
+        <main className="flex-grow flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <h2 className="text-xl font-bold mb-4">Loading your profile...</h2>
+            <p className="text-gray-600 mb-4">Please wait while we fetch your account details.</p>
+            <button
+              onClick={handleRefreshProfile}
+              disabled={isRefreshing}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
+            >
+              {isRefreshing ? 'Refreshing...' : 'Refresh Profile'}
+            </button>
           </div>
         </main>
         <Footer />
@@ -180,7 +231,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
