@@ -80,12 +80,21 @@ export default function AdminDashboard() {
     );
   }
 
+  // Debug: Log current user role
+  console.log('Current user role:', userRole);
+  console.log('Is logged in:', isLoggedIn);
+
   if (!isLoggedIn || userRole !== 'admin') {
     return (
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-grow flex items-center justify-center bg-gray-50">
-          <p className="text-gray-700">Redirecting...</p>
+          <div className="text-center">
+            <p className="text-gray-700 mb-4">Access Denied</p>
+            <p className="text-sm text-gray-500">Current role: {userRole || 'null'}</p>
+            <p className="text-sm text-gray-500">Logged in: {isLoggedIn ? 'Yes' : 'No'}</p>
+            <p className="text-sm text-gray-500">Required: admin</p>
+          </div>
         </main>
         <Footer />
       </div>
