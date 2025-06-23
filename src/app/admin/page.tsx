@@ -1,5 +1,36 @@
 'use client';
 
+import { useAuth } from '../(contexts)/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+
+interface AdminStats {
+  totalUsers: number;
+  totalPrompts: number;
+  totalTeams: number;
+}
+
+interface SupportTicket {
+  id: string;
+  subject: string;
+  priority: 'low' | 'medium' | 'high';
+  status: 'open' | 'closed';
+  created_at: string;
+}
+
+export default function AdminDashboard() {
+  const { user, userRole, isLoggedIn, isLoading } = useAuth();
+  const router = useRouter();
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+
+  useEffect(() => {
+    // Debug: Log current user role
+    console.log('Current user role:', userRole);
+    console.log('Is logged in:', isLoggedIn);
+  }, [userRole, isLoggedIn]);
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/(contexts)/AuthContext";

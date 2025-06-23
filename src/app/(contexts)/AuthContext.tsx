@@ -54,7 +54,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUsername(profile.username as string | null); // Use username field instead of full_name
         } else {
           console.warn('User profile not found, creating default profile...');
-          
+
+          // Wait a moment for auth session to be fully established
+          await new Promise(resolve => setTimeout(resolve, 1000));
+
           // Try to create a default profile for the user
           const { data: newProfile, error: createError } = await supabase
             .from('profiles')
@@ -62,22 +65,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               id: currentUser.id,
               email: currentUser.email,
               username: currentUser.email?.split('@')[0] || 'user',
-              full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User',
+              full_name: currentUser.user_metadata?.full_name || currentUser.user_metadata?.username || currentUser.email?.split('@')[0] || 'User',
               plan: 'free',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             })
             .select()
             .single();
-            
+
           if (createError) {
             console.error('Error creating default profile:', createError);
+            // If profile creation fails, set defaults but don't prevent login
             setUserRole('free');
-            setUsername(null);
+            setUsername(currentUser.email?.split('@')[0] || null);
+
+            // Try one more time with a simple insert
+            setTimeout(async () => {
+              console.log('Retrying profile creation...');
+              const { error: retryError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: currentUser.id,
+                  email: currentUser.email,
+                  username: currentUser.email?.split('@')[0] || 'user',
+                  full_name: currentUser.email?.split('@')[0] || 'User',
+                  plan: 'free'
+                });
+
+              if (!retryError) {
+                console.log('✅ Profile created on retry');
+                // Refresh the auth status to get the new profile
+                setTimeout(() => refreshAuthStatus(), 500);
+              }
+            }, 2000);
           } else {
             setUserRole(newProfile.plan as UserPlan);
             setUsername(newProfile.username as string | null);
-            console.log('Created default profile for user');
+            console.log('✅ Created default profile for user');
           }
         }
       } catch (e) {

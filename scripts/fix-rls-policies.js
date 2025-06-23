@@ -18,13 +18,32 @@ async function fixRLSPolicies() {
   try {
     console.log('Fixing RLS policies for profiles table...');
     
-    // Drop existing policies that might be causing issues
+    // First, let's make sure the profiles table has the username column
+    const { error: alterError } = await supabase.rpc('exec_sql', { 
+      sql: `
+        DO $$ 
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='profiles' AND column_name='username') THEN
+            ALTER TABLE profiles ADD COLUMN username TEXT;
+          END IF;
+        END $$;
+      `
+    });
+    
+    if (alterError) {
+      console.log('Note: Could not check/add username column:', alterError.message);
+    }
+    
+    // Drop existing policies to start fresh
     const dropPolicies = `
-      DROP POLICY IF EXISTS "Users can read own profile" ON profiles;
+      DROP POLICY IF EXISTS "Users can view own profile" ON profiles;
       DROP POLICY IF EXISTS "Users can update own profile" ON profiles;
       DROP POLICY IF EXISTS "Users can insert own profile" ON profiles;
-      DROP POLICY IF EXISTS "Admins can read all profiles" ON profiles;
+      DROP POLICY IF EXISTS "Admins can view all profiles" ON profiles;
       DROP POLICY IF EXISTS "Admins can update all profiles" ON profiles;
+      DROP POLICY IF EXISTS "Allow authenticated users to insert their own profile" ON profiles;
+      DROP POLICY IF EXISTS "Allow users to view their own profile" ON profiles;
+      DROP POLICY IF EXISTS "Allow users to update their own profile" ON profiles;
     `;
     
     const { error: dropError } = await supabase.rpc('exec_sql', { sql: dropPolicies });
@@ -33,23 +52,31 @@ async function fixRLSPolicies() {
       console.log('Note: Some policies may not have existed:', dropError.message);
     }
     
-    // Create new policies that allow proper access
+    // Create new, more permissive policies
     const createPolicies = `
-      -- Allow users to read their own profile
-      CREATE POLICY "Users can read own profile" ON profiles
-        FOR SELECT USING (auth.uid() = id);
+      -- Allow authenticated users to insert their own profile
+      CREATE POLICY "Allow authenticated users to insert their own profile" ON profiles
+        FOR INSERT 
+        TO authenticated
+        WITH CHECK (auth.uid() = id);
       
-      -- Allow users to insert their own profile
-      CREATE POLICY "Users can insert own profile" ON profiles
-        FOR INSERT WITH CHECK (auth.uid() = id);
+      -- Allow users to view their own profile
+      CREATE POLICY "Allow users to view their own profile" ON profiles
+        FOR SELECT 
+        TO authenticated
+        USING (auth.uid() = id);
       
       -- Allow users to update their own profile
-      CREATE POLICY "Users can update own profile" ON profiles
-        FOR UPDATE USING (auth.uid() = id);
+      CREATE POLICY "Allow users to update their own profile" ON profiles
+        FOR UPDATE 
+        TO authenticated
+        USING (auth.uid() = id);
       
-      -- Allow admins to read all profiles
-      CREATE POLICY "Admins can read all profiles" ON profiles
-        FOR SELECT USING (
+      -- Allow admins to view all profiles
+      CREATE POLICY "Allow admins to view all profiles" ON profiles
+        FOR SELECT 
+        TO authenticated
+        USING (
           EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = auth.uid() AND plan = 'admin'
@@ -57,8 +84,10 @@ async function fixRLSPolicies() {
         );
       
       -- Allow admins to update all profiles
-      CREATE POLICY "Admins can update all profiles" ON profiles
-        FOR UPDATE USING (
+      CREATE POLICY "Allow admins to update all profiles" ON profiles
+        FOR UPDATE 
+        TO authenticated
+        USING (
           EXISTS (
             SELECT 1 FROM profiles 
             WHERE id = auth.uid() AND plan = 'admin'
@@ -70,12 +99,17 @@ async function fixRLSPolicies() {
     
     if (createError) {
       console.error('Error creating policies:', createError);
+      
+      // If RPC doesn't work, show the SQL to run manually
+      console.log('\nPlease run this SQL manually in your Supabase SQL Editor:');
+      console.log(dropPolicies);
+      console.log(createPolicies);
       return;
     }
     
     console.log('✅ Successfully fixed RLS policies');
     
-    // Now ensure the admin user profile exists
+    // Now ensure the admin user profile exists using service role (bypasses RLS)
     const email = 'annalealayton@gmail.com';
     
     // Get the user ID from auth.users
@@ -95,7 +129,7 @@ async function fixRLSPolicies() {
     
     console.log(`Found user: ${authUser.id} - ${authUser.email}`);
     
-    // Use service role to upsert the admin profile
+    // Use service role to upsert the admin profile (this bypasses RLS)
     const { data, error } = await supabase
       .from('profiles')
       .upsert({
@@ -108,13 +142,13 @@ async function fixRLSPolicies() {
         updated_at: new Date().toISOString()
       })
       .select();
-    
+      
     if (error) {
-      console.error('Error creating admin profile:', error);
+      console.error('Error creating admin user profile:', error);
       return;
     }
     
-    console.log('✅ Successfully created/updated admin profile:', data[0]);
+    console.log('✅ Successfully created/updated admin user profile:', data[0]);
     
   } catch (error) {
     console.error('Unexpected error:', error);
