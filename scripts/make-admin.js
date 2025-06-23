@@ -69,7 +69,8 @@ async function makeAdmin() {
           plan: 'admin',
           email: email,
           username: username,
-          full_name: fullName
+          full_name: fullName,
+          updated_at: new Date().toISOString()
         })
         .eq('id', authUser.id)
         .select();
@@ -89,12 +90,36 @@ async function makeAdmin() {
           email: email,
           username: username,
           full_name: fullName,
-          plan: 'admin'
+          plan: 'admin',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         }])
         .select();
       
       if (error) {
         console.error('Error creating admin user profile:', error);
+        console.log('Attempting upsert instead...');
+        
+        // Try upsert as fallback
+        const { data: upsertData, error: upsertError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: authUser.id,
+            email: email,
+            username: username,
+            full_name: fullName,
+            plan: 'admin',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select();
+          
+        if (upsertError) {
+          console.error('Error upserting admin user profile:', upsertError);
+          return;
+        }
+        
+        console.log('✅ Successfully upserted admin user profile:', upsertData[0]);
         return;
       }
       

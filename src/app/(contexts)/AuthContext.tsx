@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           .from('profiles')
           .select('plan, full_name, username') // Fetch username along with plan and full_name
           .eq('id', currentUser.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle instead of single to handle no rows
 
         if (error) {
           console.error('Error fetching user profile:', error);
@@ -53,9 +53,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setUserRole(profile.plan as UserPlan); // Cast to UserPlan
           setUsername(profile.username as string | null); // Use username field instead of full_name
         } else {
-          console.warn('User profile not found or plan is missing, defaulting to free plan and null username.');
-          setUserRole('free'); // Default if profile somehow doesn't exist or plan is null
-          setUsername(null);
+          console.warn('User profile not found, creating default profile...');
+          
+          // Try to create a default profile for the user
+          const { data: newProfile, error: createError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: currentUser.id,
+              email: currentUser.email,
+              username: currentUser.email?.split('@')[0] || 'user',
+              full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'User',
+              plan: 'free',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .select()
+            .single();
+            
+          if (createError) {
+            console.error('Error creating default profile:', createError);
+            setUserRole('free');
+            setUsername(null);
+          } else {
+            setUserRole(newProfile.plan as UserPlan);
+            setUsername(newProfile.username as string | null);
+            console.log('Created default profile for user');
+          }
         }
       } catch (e) {
         console.error('Exception fetching user profile:', e);
