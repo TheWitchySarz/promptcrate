@@ -18,10 +18,22 @@ import {
   Crown
 } from 'lucide-react';
 
+interface ActivityItem {
+  action: string;
+  name: string;
+  date: string;
+}
+
+interface UserStats {
+  totalPrompts: number;
+  favoritePrompts: number;
+  recentActivity: ActivityItem[];
+}
+
 export default function HomePage() {
   const { user, userRole, username, isLoading, isLoggedIn } = useAuth();
   const router = useRouter();
-  const [userStats, setUserStats] = useState({
+  const [userStats, setUserStats] = useState<UserStats>({
     totalPrompts: 0,
     favoritePrompts: 0,
     recentActivity: []
@@ -52,7 +64,7 @@ export default function HomePage() {
           { action: 'Created prompt', name: 'Marketing Copy Generator', date: '2 hours ago' },
           { action: 'Favorited prompt', name: 'Code Review Assistant', date: '1 day ago' },
           { action: 'Updated profile', name: 'Profile settings', date: '3 days ago' }
-        ] as Array<{ action: string; name: string; date: string; }>
+        ]
       });
     } catch (error) {
       console.error('Error fetching user stats:', error);
