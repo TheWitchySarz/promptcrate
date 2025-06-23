@@ -1,0 +1,61 @@
+Here is a **clean and actionable prompt** to instruct your Replicat AI assistant (or any full-stack AI agent) to perform a **full user account debug session** across all roles and access levels. This version avoids code formatting but gives specific and complete instructions.
+
+---
+
+**Prompt Title:**
+Run a Full User Account Debug — URGENT Auth & Access Fix Required
+
+---
+
+**Context:**
+Users across all access levels (free, pro, enterprise, admin) are experiencing account load failures. The account settings page displays "Failed to load profile." Additionally:
+
+* After login, users are redirected incorrectly to `/app/editor` instead of `/home`.
+* Admins are being forcefully logged out when visiting `/admin`.
+* My own account (`annalealayton@gmail.com`) is supposed to have admin access but cannot manage or load profile data.
+
+---
+
+**Your Tasks:**
+
+1. **Check Supabase Auth Config**
+
+   * Validate that all user roles (free, pro, enterprise, admin) have correct `user_metadata` or `app_metadata`.
+   * Confirm that `role` and `plan` are correctly assigned on sign-up or sign-in.
+   * Ensure `admin` users are not being misclassified or logged out due to failed checks.
+
+2. **Fix Profile Load Failures**
+
+   * Debug why `GET /account/settings` is failing to load profile data.
+   * Determine if this is a Supabase session, permissions, or database read error.
+   * Validate that all required fields for rendering account settings exist and are populated in the DB.
+
+3. **Audit Route Redirection Logic**
+
+   * Ensure that after login:
+
+     * Standard users go to `/home`
+     * Admins can access `/admin` without logout
+   * Fix any incorrect default redirects to `/app/editor`.
+
+4. **Enable Admin Panel Access**
+
+   * Grant immediate access to the `/admin` route for users with the admin role.
+   * Confirm the route is protected only against non-admin users.
+
+5. **Check Database Integrity Across Plans**
+
+   * Ensure user plans (free, pro, enterprise) are loading properly and tied to actual Supabase rows.
+   * Validate pricing and plan-based gating is not causing unintended errors.
+
+---
+
+**Outcome Required:**
+
+* My admin account (`annalealayton@gmail.com`) must load fully and access `/admin` immediately.
+* All user roles must load profile settings without failure.
+* Login and access routes must behave correctly or I cannot onboard clients.
+
+---
+
+Let me know if you want this turned into a Notion bug ticket, Trello task, or GitHub issue.
