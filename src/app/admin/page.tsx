@@ -1,35 +1,5 @@
+
 'use client';
-
-import { useAuth } from '../(contexts)/AuthContext';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-
-interface AdminStats {
-  totalUsers: number;
-  totalPrompts: number;
-  totalTeams: number;
-}
-
-interface SupportTicket {
-  id: string;
-  subject: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'open' | 'closed';
-  created_at: string;
-}
-
-export default function AdminDashboard() {
-  const { user, userRole, isLoggedIn, isLoading } = useAuth();
-  const router = useRouter();
-  const [stats, setStats] = useState<AdminStats | null>(null);
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [loadingStats, setLoadingStats] = useState(true);
-
-  useEffect(() => {
-    // Debug: Log current user role
-    console.log('Current user role:', userRole);
-    console.log('Is logged in:', isLoggedIn);
-  }, [userRole, isLoggedIn]);
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -82,6 +52,12 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
+    // Debug: Log current user role
+    console.log('Current user role:', userRole);
+    console.log('User:', user);
+  }, [userRole, user]);
+
+  useEffect(() => {
     // Don't redirect immediately - give time for auth to load
     const timeoutId = setTimeout(() => {
       if (!isLoading && !isRefreshing && (!user || userRole !== 'admin')) {
@@ -110,6 +86,8 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error fetching admin stats:', error);
+    } finally {
+      setLoadingStats(false);
     }
   };
 
@@ -124,10 +102,6 @@ export default function AdminDashboard() {
       </div>
     );
   }
-
-  // Debug: Log current user role
-  console.log('Current user role:', userRole);
-  console.log('Is logged in:', isLoggedIn);
 
   // Show access denied with option to refresh profile
   if (!user || (userRole !== 'admin' && userRole !== null)) {
