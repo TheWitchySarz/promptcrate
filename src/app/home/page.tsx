@@ -52,7 +52,7 @@ export default function HomePage() {
           { action: 'Created prompt', name: 'Marketing Copy Generator', date: '2 hours ago' },
           { action: 'Favorited prompt', name: 'Code Review Assistant', date: '1 day ago' },
           { action: 'Updated profile', name: 'Profile settings', date: '3 days ago' }
-        ]
+        ] as Array<{ action: string; name: string; date: string; }>
       });
     } catch (error) {
       console.error('Error fetching user stats:', error);
