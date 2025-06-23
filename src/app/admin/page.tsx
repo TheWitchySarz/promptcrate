@@ -35,11 +35,27 @@ export default function AdminDashboard() {
 
   // Redirect non-admin users
   useEffect(() => {
-    if (!isLoading && (!isLoggedIn || (userRole !== 'admin' && userRole !== null))) {
-      console.log('Redirecting non-admin user. Role:', userRole, 'Logged in:', isLoggedIn);
-      router.push('/login');
+    console.log('Admin page useEffect - User role:', userRole, 'Loading:', isLoading, 'User:', user?.email);
+
+    if (!isLoading) {
+      if (!user) {
+        console.log('No user found, redirecting to login');
+        router.push('/login');
+        return;
+      }
+
+      // Check if user is admin by email or role
+      const isAdmin = userRole === 'admin' || user?.email === 'annalealayton@gmail.com' || user?.user_metadata?.role === 'admin';
+
+      if (!isAdmin) {
+        console.log('Redirecting non-admin user. Role:', userRole, 'Logged in:', !!user);
+        router.push('/home');
+        return;
+      }
+
+      console.log('Admin access granted for:', user.email);
     }
-  }, [isLoading, isLoggedIn, userRole, router]);
+  }, [user, userRole, isLoading, router]);
 
   // Fetch admin stats
   useEffect(() => {

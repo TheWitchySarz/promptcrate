@@ -10,11 +10,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 function SearchParamsHandler({ onParams }: { onParams: (params: URLSearchParams) => void }) {
   const searchParams = useSearchParams();
-  
+
   useEffect(() => {
     onParams(searchParams);
   }, [searchParams, onParams]);
-  
+
   return null;
 }
 
@@ -205,4 +205,4 @@ export default function LoginPage() {
       <LoginContent />
     </Suspense>
   );
-} 
+}

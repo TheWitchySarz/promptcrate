@@ -29,6 +29,90 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userRole, setUserRole] = useState<UserPlan>(null); // Stores the user's plan
   const [username, setUsername] = useState<string | null>(null); // Added username state
 
+  const getUserRole = (user: any, profile: any) => {
+    console.log('Getting user role for:', user?.id);
+    console.log('User metadata:', user?.user_metadata);
+    console.log('Profile data:', profile);
+
+    // Check user metadata first (most reliable)
+    if (user?.user_metadata?.role === 'admin') {
+      console.log('Using admin role from user metadata');
+      return 'admin';
+    }
+
+    // Check profile plan as backup
+    if (profile?.plan === 'admin') {
+      console.log('Using admin role from profile plan');
+      return 'admin';
+    }
+
+    // For annalealayton@gmail.com, force admin role as fallback
+    if (user?.email === 'annalealayton@gmail.com') {
+      console.log('Force admin role for annalealayton@gmail.com');
+      return 'admin';
+    }
+
+    console.log('Defaulting to basic role');
+    return 'basic';
+  };
+
+  const createUserProfile = async (user: any) => {
+    try {
+      console.log('Creating profile for user:', user.id, user.email);
+
+      // Determine user plan based on email and metadata
+      let userPlan = 'basic';
+      if (user.email === 'annalealayton@gmail.com' || user.user_metadata?.role === 'admin') {
+        userPlan = 'admin';
+      }
+
+      const profileData = {
+        id: user.id,
+        email: user.email,
+        username: user.user_metadata?.username || user.email?.split('@')[0] || 'user',
+        full_name: user.user_metadata?.full_name || user.user_metadata?.username || user.email?.split('@')[0] || 'User',
+        plan: userPlan,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Creating profile with data:', profileData);
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert(profileData, {
+          onConflict: 'id'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating profile:', error);
+        // Don't throw error, return basic profile data
+        return {
+          id: user.id,
+          email: user.email,
+          username: user.email?.split('@')[0] || 'user',
+          full_name: user.email?.split('@')[0] || 'User',
+          plan: userPlan
+        };
+      }
+
+      console.log('Profile created successfully:', data);
+      return data;
+    } catch (error) {
+      console.error('Failed to create profile:', error);
+      // Return basic profile data even if creation fails
+      return {
+        id: user.id,
+        email: user.email,
+        username: user.email?.split('@')[0] || 'user',
+        full_name: user.email?.split('@')[0] || 'User',
+        plan: user.email === 'annalealayton@gmail.com' ? 'admin' : 'basic'
+      };
+    }
+  };
+
   // Function to fetch user profile and update state
   const fetchUserProfileAndSetState = async (currentUser: SupabaseUser | null) => {
     // Ensure isLoading is true if we are about to fetch profile data
@@ -153,75 +237,125 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const getSessionAndProfile = async () => {
-      setIsLoading(true); // Start loading
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      // fetchUserProfileAndSetState will set isLoading to false
-      await fetchUserProfileAndSetState(session?.user ?? null);
-    };
+    let mounted = true;
 
-    getSessionAndProfile();
+    const loadUser = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
 
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const newSupabaseUser = session?.user ?? null;
-      const oldSupabaseUser = user; // Capture user state before updating
+        if (!mounted) return;
 
-      setUser(newSupabaseUser); // Update user state immediately
+        if (user) {
+          console.log('User found:', user.id, user.email);
 
-      // Determine if a full loading cycle (including profile fetch) is needed
-      let needsProfileFetchAndLoadingCycle = false;
+          // Get or create profile
+          let userProfile = null;
 
-      if (event === 'SIGNED_IN') {
-        needsProfileFetchAndLoadingCycle = true;
-      } else if (event === 'SIGNED_OUT') {
-        setUserRole(null);
-        setUsername(null);
-        setIsLoading(false); // Definitely not loading, and no profile to fetch
-      } else if (event === 'USER_UPDATED') {
-        needsProfileFetchAndLoadingCycle = true; // User data changed, refresh profile
-      } else if (event === 'INITIAL_SESSION') {
-        // For initial session, getSessionAndProfile has already run or is running.
-        // This event mainly confirms the initial state.
-        if (!newSupabaseUser) {
-          setUserRole(null);
-          setUsername(null);
-          setIsLoading(false);
-        } else {
-          // If there is a user from INITIAL_SESSION, getSessionAndProfile covers it.
-          // If user state changes from null to an actual user here (e.g. race condition with getSessionAndProfile),
-          // ensure profile is fetched and loading state is handled.
-          if (!oldSupabaseUser && newSupabaseUser) {
-            needsProfileFetchAndLoadingCycle = true;
+          try {
+            const { data: profile, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', user.id)
+              .maybeSingle();
+
+            if (profileError && profileError.code !== 'PGRST116') {
+              console.error('Error fetching profile:', profileError);
+              userProfile = await createUserProfile(user);
+            } else if (!profile) {
+              console.log('No profile found, creating...');
+              userProfile = await createUserProfile(user);
+            } else {
+              userProfile = profile;
+            }
+          } catch (error) {
+            console.error('Error with profile:', error);
+            userProfile = await createUserProfile(user);
           }
-          // If user already existed or no change, getSessionAndProfile's call to 
-          // fetchUserProfileAndSetState will handle setting isLoading to false.
-          // If it's already false, this event doesn't need to change it unless a load is triggered.
+
+          const role = getUserRole(user, userProfile);
+          console.log('Current user role:', role);
+          console.log('Is logged in:', true);
+          console.log('User:', user.email);
+
+          setUser(user);
+          setUserRole(role);
+          setProfile(userProfile);
+        } else {
+          console.log('Current user role:', null);
+          console.log('Is logged in:', false);
+          setUser(null);
+          setUserRole(null);
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error('Error loading user:', error);
+        setUser(null);
+        setUserRole(null);
+        setProfile(null);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
         }
       }
-      // Other events like TOKEN_REFRESHED, PASSWORD_RECOVERY are not explicitly handled here for isLoading cycles
-      // unless they trigger a USER_UPDATED or SIGNED_IN/OUT implicitly.
-      // If they change the user object, USER_UPDATED should ideally fire.
+    };
 
-      if (needsProfileFetchAndLoadingCycle && newSupabaseUser) {
-        setIsLoading(true);
-        await fetchUserProfileAndSetState(newSupabaseUser); // This will set isLoading(false)
-      } else if (needsProfileFetchAndLoadingCycle && !newSupabaseUser) {
-        // This case (e.g. SIGNED_IN event but session.user is null) should be rare.
-        // Or if USER_UPDATED results in a null user.
+    loadUser();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+
+      console.log('Auth state changed:', event, session?.user?.email);
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        const user = session.user;
+        console.log('User signed in:', user.id, user.email);
+
+        // Get or create profile
+        let userProfile = null;
+
+        try {
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
+
+          if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Error fetching profile:', profileError);
+            userProfile = await createUserProfile(user);
+          } else if (!profile) {
+            console.log('No profile found, creating...');
+            userProfile = await createUserProfile(user);
+          } else {
+            userProfile = profile;
+          }
+        } catch (error) {
+          console.error('Error with profile on sign in:', error);
+          userProfile = await createUserProfile(user);
+        }
+
+        const role = getUserRole(user, userProfile);
+        console.log('Current user role:', role);
+        console.log('User:', user.email);
+
+        setUser(user);
+        setUserRole(role);
+        setProfile(userProfile);
+      } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out');
+        setUser(null);
         setUserRole(null);
-        setUsername(null);
-        setIsLoading(false);
+        setProfile(null);
       }
-      // If no specific loading cycle was explicitly started by this event handler, 
-      // the isLoading state relies on the completion of getSessionAndProfile or 
-      // a previous event's fetchUserProfileAndSetState.
+
+      setIsLoading(false);
     });
 
     return () => {
-      authListener.subscription?.unsubscribe();
+      mounted = false;
+      subscription.unsubscribe();
     };
-  }, [supabase]); // supabase is stable, so this effect runs once on mount and cleans up on unmount.
+  }, []);
 
   const isLoggedIn = !!user;
 
